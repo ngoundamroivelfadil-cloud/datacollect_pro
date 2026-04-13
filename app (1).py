@@ -249,8 +249,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-def get_conn(): 
-    return sqlite3.connect(DB_PATH)
+def get_conn(): return sqlite3.connect(DB_PATH)
 
 def get_etudiants():
     conn = get_conn()
@@ -324,13 +323,13 @@ with st.sidebar:
 # PAGE: ACCUEIL
 # ═══════════════════════════════════════════════════════════════════════════════
 if module == "🏠 Accueil":
+   
     col_logo, col_titre = st.columns([1, 4])
     with col_logo:
-        st.image("logo.svg", width=100)
+            st.image("logo.svg", width=100)
     with col_titre:
-        st.markdown('<div class="hero-title">DataCollect Pro</div>', unsafe_allow_html=True)
-        st.markdown('<div class="hero-sub">Plateforme intelligente de collecte & d\'analyse descriptive des données</div>', unsafe_allow_html=True)
-
+            st.markdown('<div class="hero-title">DataCollect Pro</div>', unsafe_allow_html=True)
+            st.markdown('<div class="hero-sub">Plateforme intelligente de collecte & d\'analyse descriptive des données</div>', unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     df_edu = get_etudiants()
     df_com = get_ventes()
@@ -411,19 +410,19 @@ elif module == "📚 Éducation":
         with st.form("form_etudiant", clear_on_submit=True):
             col1, col2, col3 = st.columns(3)
             with col1:
-                nom = st.text_input("Nom *")
+                nom = st.text_input("Nom *", key="nom")
                 filiere = st.selectbox("Filière *", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
                 note_cc = st.number_input("Note CC (sur 20) *", 0.0, 20.0, step=0.25)
             with col2:
-                prenom = st.text_input("Prénom *")
+                prenom = st.text_input("Prénom *", key="prenom")
                 niveau = st.selectbox("Niveau *", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
                 note_examen = st.number_input("Note Examen (sur 20) *", 0.0, 20.0, step=0.25)
             with col3:
-                matricule = st.text_input("Matricule")
+                matricule = st.text_input("Matricule", key="matricule")
                 semestre = st.selectbox("Semestre", ["S1", "S2", "S3", "S4", "S5", "S6"])
                 absences = st.number_input("Absences (heures)", 0, 200, 0)
 
-            matiere = st.text_input("Matière *", placeholder="Ex: Analyse de données, Algèbre...")
+            matiere = st.text_input("Matière *", placeholder="Ex: Analyse de données, Algèbre...", key="matiere")
 
             submitted = st.form_submit_button("💾 Enregistrer l'étudiant", use_container_width=True)
 
@@ -673,13 +672,13 @@ elif module == "🛒 Commerce":
         with st.form("form_vente", clear_on_submit=True):
             col1, col2, col3 = st.columns(3)
             with col1:
-                produit = st.text_input("Produit *", placeholder="Ex: Smartphone, Cahier...")
+                produit = st.text_input("Produit *", placeholder="Ex: Smartphone, Cahier...", key="produit")
                 quantite = st.number_input("Quantité *", 1, 100000, 1)
                 region = st.selectbox("Région *", ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"])
             with col2:
                 categorie = st.selectbox("Catégorie *", ["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"])
                 prix_unitaire = st.number_input("Prix unitaire (FCFA) *", 0.0, 10000000.0, step=100.0)
-                vendeur = st.text_input("Vendeur/Agent")
+                vendeur = st.text_input("Vendeur/Agent", key="vendeur")
             with col3:
                 mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Carte bancaire", "Virement", "Crédit"])
                 date_vente = st.date_input("Date de vente", value=date.today())
