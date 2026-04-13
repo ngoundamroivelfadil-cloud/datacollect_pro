@@ -153,7 +153,7 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
 /* Buttons */
 .stButton > button {
     background: linear-gradient(135deg, #e94560, #a855f7) !important;
-    color: white !important;
+    color: black !important;
     border: none !important;
     border-radius: 10px !important;
     font-family: 'Syne', sans-serif !important;
