@@ -142,7 +142,7 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
     background: rgba(255,255,255,0.06) !important;
     border: 1px solid rgba(255,255,255,0.12) !important;
     border-radius: 10px !important;
-    color: #e8e8f0 !important;
+    color: #000000 !important;
 }
 
 .stTextInput input:focus, .stNumberInput input:focus {
