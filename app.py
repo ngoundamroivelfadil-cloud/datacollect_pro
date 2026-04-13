@@ -142,7 +142,7 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
     background: rgba(255,255,255,0.06) !important;
     border: 1px solid rgba(255,255,255,0.12) !important;
     border-radius: 10px !important;
-    color: #000000 !important;
+    color: #e8e8f0 !important;
 }
 
 .stTextInput input:focus, .stNumberInput input:focus {
@@ -215,7 +215,7 @@ label { color: #c8c8d8 !important; }
     padding: 16px !important;
 }
 
-[data-testid="stMetricValue"] { color: #000000 !important; font-family: 'Syne', sans-serif !important; }
+[data-testid="stMetricValue"] { color: #e8e8f0 !important; font-family: 'Syne', sans-serif !important; }
 [data-testid="stMetricLabel"] { color: #8888a8 !important; }
 [data-testid="stMetricDelta"] svg { fill: currentColor !important; }
 </style>
