@@ -12,7 +12,7 @@ import io
 # ─── PAGE CONFIG ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="DataCollect Pro",
-    page_icon="📊",
+    page_icon="logo.svg",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -249,7 +249,8 @@ def init_db():
     conn.commit()
     conn.close()
 
-def get_conn(): return sqlite3.connect(DB_PATH)
+def get_conn(): 
+    return sqlite3.connect(DB_PATH)
 
 def get_etudiants():
     conn = get_conn()
@@ -323,8 +324,12 @@ with st.sidebar:
 # PAGE: ACCUEIL
 # ═══════════════════════════════════════════════════════════════════════════════
 if module == "🏠 Accueil":
-    st.markdown('<div class="hero-title">DataCollect Pro</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-sub">Plateforme intelligente de collecte & d\'analyse descriptive des données</div>', unsafe_allow_html=True)
+    col_logo, col_titre = st.columns([1, 4])
+    with col_logo:
+        st.image("logo.svg", width=100)
+    with col_titre:
+        st.markdown('<div class="hero-title">DataCollect Pro</div>', unsafe_allow_html=True)
+        st.markdown('<div class="hero-sub">Plateforme intelligente de collecte & d\'analyse descriptive des données</div>', unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
     df_edu = get_etudiants()

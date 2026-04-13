@@ -1,0 +1,52 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Dégradé métallique Or/Champagne ultra-luxe (Reflets complexes pour faire "premium") -->
+    <linearGradient id="luxury-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4AF37" />
+      <stop offset="25%" stop-color="#FFF5C3" />
+      <stop offset="50%" stop-color="#AA771C" />
+      <stop offset="75%" stop-color="#FFF5C3" />
+      <stop offset="100%" stop-color="#8C6B00" />
+    </linearGradient>
+
+    <!-- Fond sombre texturé "Obsidienne" / Noir Premium -->
+    <linearGradient id="luxury-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B1E26" />
+      <stop offset="50%" stop-color="#12141A" />
+      <stop offset="100%" stop-color="#08090C" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fond Premium (Un carré avec de très légers bords arrondis style application de luxe) -->
+  <rect width="512" height="512" rx="48" ry="48" fill="url(#luxury-dark)" />
+
+  <!-- Cadres circulaires fins inspirés de l'horlogerie de luxe (Minimalistes et propres) -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="url(#luxury-gold)" stroke-width="2" opacity="0.8" />
+  <circle cx="256" cy="256" r="210" fill="none" stroke="url(#luxury-gold)" stroke-width="1" opacity="0.4" />
+
+  <!-- L'OMBRE DU LOGO (Faite sans filtres complexes pour garantir l'affichage partout) -->
+  <!-- Traduit très légèrement en bas à droite pour un effet 3D physique -->
+  <g transform="translate(6, 8)">
+    <path d="M120 160 L256 260 L392 160 L392 350 
+             M120 160 L120 350 
+             M120 240 L256 260 L392 350" 
+          stroke="#000000" 
+          stroke-width="18" 
+          fill="none" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          opacity="0.6"></path>
+  </g>
+
+  <!-- LE LOGO ORIGINAL RESTAURÉ ET SUBLIMÉ -->
+  <!-- Application du dégradé Or / Champagne -->
+  <path d="M120 160 L256 260 L392 160 L392 350 
+           M120 160 L120 350 
+           M120 240 L256 260 L392 350" 
+        stroke="url(#luxury-gold)" 
+        stroke-width="18" 
+        fill="none" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"></path>
+
+</svg>
