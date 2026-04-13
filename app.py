@@ -314,8 +314,8 @@ with st.sidebar:
     st.markdown("""
     <div style='position:fixed; bottom:20px; left:0; right:0; text-align:center;
                 color:#44445a; font-size:0.72rem; padding:0 20px;'>
-        Développé avec Python & Streamlit<br>
-        <span style='color:#e94560'>♥</span> INF 232 EC2
+        © 2026 ROI-V ABDEL Tous droits réservés<br>
+        <span style='color:#e94560'>♥</span> Concus par NGOUNDAM_V ABDEL_FADIL 
     </div>
     """, unsafe_allow_html=True)
 
