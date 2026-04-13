@@ -142,7 +142,7 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
     background: rgba(255,255,255,0.06) !important;
     border: 1px solid rgba(255,255,255,0.12) !important;
     border-radius: 10px !important;
-    color: #e8e8f0 !important;
+    color: #000000 !important;
 }
 
 .stTextInput input:focus, .stNumberInput input:focus {
@@ -153,7 +153,7 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
 /* Buttons */
 .stButton > button {
     background: linear-gradient(135deg, #e94560, #a855f7) !important;
-    color: black !important;
+    color: #ffffff !important;
     border: none !important;
     border-radius: 10px !important;
     font-family: 'Syne', sans-serif !important;
@@ -314,8 +314,8 @@ with st.sidebar:
     st.markdown("""
     <div style='position:fixed; bottom:20px; left:0; right:0; text-align:center;
                 color:#44445a; font-size:0.72rem; padding:0 20px;'>
-        © 2026 ROI-V ABDEL Tous droits réservés <br>
-        <span style='color:#e94560'>♥</span> Concus par NGOUNDAM_V ABDEL_FADIL
+        Développé avec Python & Streamlit<br>
+        <span style='color:#e94560'>♥</span> INF 232 EC2
     </div>
     """, unsafe_allow_html=True)
 
@@ -410,19 +410,18 @@ elif module == "📚 Éducation":
             col1, col2, col3 = st.columns(3)
             with col1:
                 nom = st.text_input("Nom *", key="nom")
-                filiere = st.selectbox("Filière ", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
-                note_cc = st.number_input("Note CC (sur 20) ", 0.0, 20.0, step=0.25)
-                note_TP = st.number_input("Note TP(sur 30) ", 0.0, 20.0, step=0.25)
+                filiere = st.selectbox("Filière *", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
+                note_cc = st.number_input("Note CC (sur 20) *", 0.0, 20.0, step=0.25)
             with col2:
-                prenom = st.text_input("Prénom ", key="prenom")
-                niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
-                note_examen = st.number_input("Note EE (sur 50) ", 0.0, 20.0, step=0.25)
+                prenom = st.text_input("Prénom *", key="prenom")
+                niveau = st.selectbox("Niveau *", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
+                note_examen = st.number_input("Note Examen (sur 20) *", 0.0, 20.0, step=0.25)
             with col3:
                 matricule = st.text_input("Matricule", key="matricule")
                 semestre = st.selectbox("Semestre", ["S1", "S2", "S3", "S4", "S5", "S6"])
                 absences = st.number_input("Absences (heures)", 0, 200, 0)
 
-            matiere = st.text_input("Matière ", placeholder="Ex: Analyse de données, Algèbre...", key="matiere")
+            matiere = st.text_input("Matière *", placeholder="Ex: Analyse de données, Algèbre...", key="matiere")
 
             submitted = st.form_submit_button("💾 Enregistrer l'étudiant", use_container_width=True)
 
