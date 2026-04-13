@@ -410,18 +410,19 @@ elif module == "📚 Éducation":
             col1, col2, col3 = st.columns(3)
             with col1:
                 nom = st.text_input("Nom *", key="nom")
-                filiere = st.selectbox("Filière *", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
-                note_cc = st.number_input("Note CC (sur 20) *", 0.0, 20.0, step=0.25)
+                filiere = st.selectbox("Filière ", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
+                note_cc = st.number_input("Note CC (sur 20) ", 0.0, 20.0, step=0.25)
+                note_TP = st.number_input("Note TP(sur 30) ", 0.0, 20.0, step=0.25)
             with col2:
-                prenom = st.text_input("Prénom *", key="prenom")
-                niveau = st.selectbox("Niveau *", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
-                note_examen = st.number_input("Note Examen (sur 20) *", 0.0, 20.0, step=0.25)
+                prenom = st.text_input("Prénom ", key="prenom")
+                niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
+                note_examen = st.number_input("Note EE (sur 50) ", 0.0, 20.0, step=0.25)
             with col3:
                 matricule = st.text_input("Matricule", key="matricule")
                 semestre = st.selectbox("Semestre", ["S1", "S2", "S3", "S4", "S5", "S6"])
                 absences = st.number_input("Absences (heures)", 0, 200, 0)
 
-            matiere = st.text_input("Matière *", placeholder="Ex: Analyse de données, Algèbre...", key="matiere")
+            matiere = st.text_input("Matière ", placeholder="Ex: Analyse de données, Algèbre...", key="matiere")
 
             submitted = st.form_submit_button("💾 Enregistrer l'étudiant", use_container_width=True)
 
