@@ -680,7 +680,7 @@ elif module == "🛒 Commerce":
                 prix_unitaire = st.number_input("Prix unitaire (FCFA) ", 0.0, 10000000.0, step=100.0)
                 vendeur = st.text_input("Vendeur/Agent", key="vendeur")
             with col3:
-                mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Orange Money" "Carte bancaire", "Crypto"])
+                mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Orange Money" ,"Carte bancaire", "Crypto"])
                 date_vente = st.date_input("Date de vente", value=date.today())
 
             submitted = st.form_submit_button("💾 Enregistrer la vente", use_container_width=True)
