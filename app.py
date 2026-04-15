@@ -672,12 +672,12 @@ elif module == "🛒 Commerce":
         with st.form("form_vente", clear_on_submit=True):
             col1, col2, col3 = st.columns(3)
             with col1:
-                produit = st.text_input("Produit *", placeholder="Ex: Smartphone, Cahier...", key="produit")
-                quantite = st.number_input("Quantité *", 1, 100000, 1)
-                region = st.selectbox("Région *", ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"])
+                produit = st.text_input("Produit ", placeholder="Ex: Smartphone, Cahier...", key="produit")
+                quantite = st.number_input("Quantité ", 1, 100000, 1)
+                region = st.selectbox("Région ", ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"])
             with col2:
-                categorie = st.selectbox("Catégorie *", ["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"])
-                prix_unitaire = st.number_input("Prix unitaire (FCFA) *", 0.0, 10000000.0, step=100.0)
+                categorie = st.selectbox("Catégorie ", ["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"])
+                prix_unitaire = st.number_input("Prix unitaire (FCFA) ", 0.0, 10000000.0, step=100.0)
                 vendeur = st.text_input("Vendeur/Agent", key="vendeur")
             with col3:
                 mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Carte bancaire", "Virement", "Crédit"])
