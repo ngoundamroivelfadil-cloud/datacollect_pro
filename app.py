@@ -142,7 +142,7 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
     background: rgba(255,255,255,0.06) !important;
     border: 1px solid rgba(255,255,255,0.12) !important;
     border-radius: 10px !important;
-    color: #000000 !important;
+    color: #ffffff !important;
 }
 
 .stTextInput input:focus, .stNumberInput input:focus {
@@ -278,7 +278,7 @@ with st.sidebar:
     st.markdown("""
     <div style='text-align:center; padding: 20px 0 10px'>
         <div style='font-family:Syne; font-size:1.6rem; font-weight:800; 
-                    background:linear-gradient(135deg,#e94560,#00d084);
+                    background:linear-gradient(135deg,#e94560,#a855f7);
                     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
                     background-clip:text;'>
             DataCollect Pro
