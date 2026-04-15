@@ -415,7 +415,7 @@ elif module == "📚 Éducation":
                 note_TP = st.number_input("Note TP (sur 30)", 0.0, 20.0, step=0.25)
             with col2:
                 prenom = st.text_input("Prénom ", key="prenom")
-                niveau = st.selectbox("Niveau *", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
+                niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
                 note_examen = st.number_input("Note EE (sur 50) ", 0.0, 20.0, step=0.25)
             with col3:
                 matricule = st.text_input("Matricule", key="matricule")
