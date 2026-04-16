@@ -278,7 +278,7 @@ with st.sidebar:
     st.markdown("""
     <div style='text-align:center; padding: 20px 0 10px'>
         <div style='font-family:Syne; font-size:1.6rem; font-weight:800; 
-                    background:linear-gradient(135deg,#e94560,#00d084);
+                    background:linear-gradient(135deg,#e94560,);
                     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
                     background-clip:text;'>
             DataCollect Pro
