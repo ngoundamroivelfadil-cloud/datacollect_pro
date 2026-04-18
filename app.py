@@ -144,6 +144,9 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
     border-radius: 10px !important;
     color: #000000 !important;
     caret-color: #000000 !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    margin: 0 !important;
 }
 
 .stTextInput input::placeholder, .stNumberInput input::placeholder {
