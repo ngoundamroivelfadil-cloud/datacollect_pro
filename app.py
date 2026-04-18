@@ -247,6 +247,10 @@ def init_db():
         c.execute("ALTER TABLE etudiants ADD COLUMN note_tp REAL DEFAULT 0")
     except:
         pass
+    try:
+        c.execute("ALTER TABLE etudiants ADD COLUMN credits REAL DEFAULT 6")
+    except:
+        pass
     c.execute("""
         CREATE TABLE IF NOT EXISTS ventes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -313,7 +317,7 @@ with st.sidebar:
     if module == "📚 Éducation":
         page_edu = st.selectbox(
             "Navigation",
-            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
+            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🎓 Bulletin de notes", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
         )
     elif module == "🛒 Commerce":
         page_com = st.selectbox(
@@ -433,7 +437,11 @@ elif module == "📚 Éducation":
                 semestre = st.selectbox("Semestre", ["S1", "S2"])
                 note_examen = st.number_input("Note EE (sur 50) ", 0.0, 50.0, step=0.25)
 
-            matiere= st.text_input("Unité d'enseignement ", placeholder="Ex: INF121 Analyse de données, Algèbre...", key="Unité d'enseignement")
+            col_mat, col_cred = st.columns([3, 1])
+            with col_mat:
+                matiere = st.text_input("Unité d'enseignement ", placeholder="Ex: INF232 Analyse de données...", key="Unité d'enseignement")
+            with col_cred:
+                credits = st.number_input("Crédits", min_value=1.0, max_value=30.0, value=6.0, step=1.0)
 
             submitted = st.form_submit_button("💾 Enregistrer l'étudiant", use_container_width=True)
 
@@ -444,11 +452,11 @@ elif module == "📚 Éducation":
                     conn = get_conn()
                     conn.execute("""
                         INSERT INTO etudiants (nom, prenom, matricule, filiere, niveau, semestre,
-                        matiere, note_cc, note_tp, note_examen, note_finale, mention, absences, date_saisie)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        matiere, note_cc, note_tp, note_examen, note_finale, mention, absences, date_saisie, credits)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """, (nom, prenom, matricule, filiere, niveau, semestre, matiere,
                           note_cc, note_TP, note_examen, note_finale, ment, 0,
-                          datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                          datetime.now().strftime("%Y-%m-%d %H:%M:%S"), credits))
                     conn.commit()
                     conn.close()
                     st.markdown(f"""
@@ -465,7 +473,7 @@ elif module == "📚 Éducation":
         st.markdown("### Importation de données — Éducation")
         st.markdown("""
         <div class="info-box">
-            📋 <strong>Format attendu :</strong> nom, prenom, matricule, filiere, niveau, semestre, matiere, note_cc, note_tp, note_examen
+            📋 <strong>Format attendu :</strong> nom, prenom, matricule, filiere, niveau, semestre, matiere, credits, note_cc, note_tp, note_examen
         </div>
         """, unsafe_allow_html=True)
 
@@ -482,6 +490,7 @@ elif module == "📚 Éducation":
                 'niveau': ['Licence 2', 'Licence 2'],
                 'semestre': ['S1', 'S2'],
                 'matiere': ['Analyse de données', 'Algèbre'],
+                'credits': [6.0, 6.0],
                 'note_cc': [14.5, 12.0],
                 'note_tp': [25.0, 20.5],
                 'note_examen': [38.0, 42.5]
@@ -511,15 +520,16 @@ elif module == "📚 Éducation":
                             nex = float(row.get('note_examen', 0))
                             nf = round((ncc + ntp + nex) / 5, 2)
                             ment = mention(nf)
+                            creds = float(row.get('credits', 6.0))
                             conn.execute("""
                                 INSERT INTO etudiants (nom, prenom, matricule, filiere, niveau, semestre,
-                                matiere, note_cc, note_tp, note_examen, note_finale, mention, absences, date_saisie)
-                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                                matiere, note_cc, note_tp, note_examen, note_finale, mention, absences, date_saisie, credits)
+                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                             """, (row.get('nom',''), row.get('prenom',''), row.get('matricule',''),
                                   row.get('filiere',''), row.get('niveau',''), row.get('semestre',''),
                                   row.get('matiere',''), ncc, ntp, nex,
                                   nf, ment, 0,
-                                  datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                                  datetime.now().strftime("%Y-%m-%d %H:%M:%S"), creds))
                             count += 1
                         except: pass
                     conn.commit()
@@ -539,7 +549,12 @@ elif module == "📚 Éducation":
             # KPIs
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1: st.metric("👨‍🎓 Total étudiants", len(df))
-            with col2: st.metric("📈 Moyenne générale", f"{df['note_finale'].mean():.2f}/20")
+            with col2:
+                if 'credits' in df.columns and df['credits'].sum() > 0:
+                    moy_pond = np.average(df['note_finale'], weights=df['credits'])
+                else:
+                    moy_pond = df['note_finale'].mean()
+                st.metric("📈 Moyenne pondérée", f"{moy_pond:.2f}/20")
             with col3: st.metric("🏆 Note max", f"{df['note_finale'].max():.2f}/20")
             with col4: st.metric("📉 Note min", f"{df['note_finale'].min():.2f}/20")
             with col5:
@@ -645,6 +660,63 @@ elif module == "📚 Éducation":
                     fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                                        font_color='#c8c8d8')
                     st.plotly_chart(fig2, use_container_width=True)
+
+    # ── BULLETIN DE NOTES ─────────────────────────────────────────────────────
+    elif page_edu == "🎓 Bulletin de notes":
+        st.markdown("### 🎓 Bulletin de notes (Relevé Officiel)")
+        df = get_etudiants()
+        if df.empty:
+            st.warning("⚠️ Aucune donnée disponible.")
+        else:
+            col_search, col_sem = st.columns(2)
+            etudiants_uniques = df[['matricule', 'nom', 'prenom']].drop_duplicates()
+            etudiants_list = etudiants_uniques['matricule'] + " - " + etudiants_uniques['nom'] + " " + etudiants_uniques['prenom']
+            
+            with col_search:
+                search_etu = st.selectbox("Sélectionnez un étudiant", etudiants_list.tolist())
+                matricule_sel = search_etu.split(" - ")[0]
+            
+            with col_sem:
+                semestres = ["Tous"] + list(df[df['matricule'] == matricule_sel]['semestre'].unique())
+                sem_sel = st.selectbox("Semestre", semestres)
+                
+            df_etu = df[df['matricule'] == matricule_sel]
+            if sem_sel != "Tous":
+                df_etu = df_etu[df_etu['semestre'] == sem_sel]
+                
+            st.markdown("---")
+            if df_etu.empty:
+                st.info("Aucun résultat pour ce filtre.")
+            else:
+                nom_etu = df_etu['nom'].iloc[0]
+                prenom_etu = df_etu['prenom'].iloc[0]
+                st.markdown(f"**Étudiant :** {prenom_etu} {nom_etu} | **Matricule :** {matricule_sel}")
+                
+                if 'credits' not in df_etu.columns:
+                    df_etu['credits'] = 6.0
+                    
+                total_credits = df_etu['credits'].sum()
+                if total_credits > 0:
+                    moy_gen = np.average(df_etu['note_finale'], weights=df_etu['credits'])
+                else:
+                    moy_gen = df_etu['note_finale'].mean()
+                    
+                credits_valides = df_etu[df_etu['note_finale'] >= 10]['credits'].sum()
+                
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Moyenne Pondérée", f"{moy_gen:.2f} / 20")
+                c2.metric("Crédits Total", f"{total_credits:.0f}")
+                c3.metric("Crédits Validés", f"{credits_valides:.0f}")
+                
+                st.markdown("#### Relevé par unité d'enseignement")
+                df_show = df_etu[['matiere', 'credits', 'note_cc', 'note_tp', 'note_examen', 'note_finale', 'mention', 'semestre']].copy()
+                df_show.columns = ['Unité d\'Enseignement', 'Crédits', 'Note CC/20', 'Note TP/30', 'Note EE/50', 'Moyenne/20', 'Mention', 'Semestre']
+                st.dataframe(df_show, use_container_width=True)
+                
+                if moy_gen >= 10:
+                    st.markdown(f'<div class="success-msg">✅ Semestre Validé avec {credits_valides:.0f} crédits obtenus !</div>', unsafe_allow_html=True)
+                else:
+                    st.error(f"❌ Semestre Non Validé - Moyenne insuffisante pour valider le(s) semestre(s).")
 
     # ── TOUTES DONNÉES ────────────────────────────────────────────────────────
     elif page_edu == "🗃️ Voir toutes les données":
