@@ -460,6 +460,7 @@ elif module == "📚 Éducation":
                 default_grid, 
                 num_rows="dynamic", 
                 use_container_width=True,
+                hide_index=True,
                 column_config={
                     "Matière": st.column_config.TextColumn("Unité d'enseignement", required=True),
                     "Crédits": st.column_config.NumberColumn("Crédits", min_value=1.0, max_value=30.0, step=1.0, required=True),
