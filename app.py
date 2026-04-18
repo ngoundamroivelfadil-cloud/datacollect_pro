@@ -137,8 +137,19 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
     margin: 12px 0;
 }
 
-/* Inputs */
-.stTextInput input, .stNumberInput input, .stSelectbox select, .stDateInput input {
+.form-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+/* Inputs - Scoped and fixed for st.data_editor popovers */
+div:not(.stDataFrame) > div > div > .stTextInput input, 
+div:not(.stDataFrame) > div > div > .stNumberInput input, 
+div:not(.stDataFrame) > div > div > .stSelectbox select, 
+div:not(.stDataFrame) > div > div > .stDateInput input {
     background: #f0f2f6 !important;
     border: 1px solid #888888 !important;
     border-radius: 10px !important;
@@ -146,7 +157,12 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
     caret-color: #000000 !important;
     box-sizing: border-box !important;
     max-width: 100% !important;
-    margin: 0 !important;
+}
+
+/* Prevent st.data_editor internal inputs from inheriting global styles which cause offsets */
+.stDataFrame input, .stDataFrame select {
+    all: revert !important;
+    box-sizing: border-box !important;
 }
 
 .stTextInput input::placeholder, .stNumberInput input::placeholder {
@@ -469,6 +485,7 @@ elif module == "📚 Éducation":
         st.markdown("### Saisie des résultats académiques")
 
         with st.form("form_etudiant", clear_on_submit=True):
+            st.markdown('<div class="form-section">', unsafe_allow_html=True)
             st.markdown("#### 1. Informations de l'Étudiant")
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -479,7 +496,9 @@ elif module == "📚 Éducation":
                 niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
             with col3:
                 matricule = st.text_input("Matricule", key="matricule")
+            st.markdown('</div>', unsafe_allow_html=True)
 
+            st.markdown('<div class="form-section">', unsafe_allow_html=True)
             st.markdown("#### 2. Notes du Semestre (Saisie Multiple)")
             st.markdown("Remplissez la grille ci-dessous. Vous pouvez ajouter autant de matières que nécessaire en bas de la grille.")
             
@@ -506,6 +525,7 @@ elif module == "📚 Éducation":
                     "Note EE (/50)": st.column_config.NumberColumn("Note EE (/50)", min_value=0.0, max_value=50.0, step=0.25)
                 }
             )
+            st.markdown('</div>', unsafe_allow_html=True)
 
             submitted = st.form_submit_button("💾 Enregistrer le Semestre", use_container_width=True)
 
@@ -981,6 +1001,7 @@ elif module == "🛒 Commerce":
         st.markdown("### Saisie des données de ventes")
 
         with st.form("form_vente", clear_on_submit=True):
+            st.markdown('<div class="form-section">', unsafe_allow_html=True)
             st.markdown("#### 🛒 Détails de la Transaction")
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -995,17 +1016,14 @@ elif module == "🛒 Commerce":
                 mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Orange Money" ,"Carte bancaire", "Crypto"])
                 date_vente = st.date_input("Date de vente", value=date.today())
             with col3:
-                # Espace pour le total (sera mis à jour à la soumission ou visuel)
-                st.info("💡 Saisissez les produits ci-dessous.")
+                st.info("💡 Saisissez les produits ci-dessous pour générer la facture.")
+            st.markdown('</div>', unsafe_allow_html=True)
 
+            st.markdown('<div class="form-section">', unsafe_allow_html=True)
             st.markdown("#### 📦 Articles du Panier")
             
             # Grille de produits par défaut
-            default_sales = pd.DataFrame(
-                [
-                    {"Produit": "", "Catégorie": "Électronique", "Quantité": 1, "Prix unitaire (FCFA)": 0.0},
-                ]
-            )
+            default_sales = pd.DataFrame([{"Produit": "", "Catégorie": "Électronique", "Quantité": 1, "Prix unitaire (FCFA)": 0.0}])
 
             edited_sales = st.data_editor(
                 default_sales,
@@ -1013,32 +1031,13 @@ elif module == "🛒 Commerce":
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Produit": st.column_config.TextColumn(
-                        "Désignation Produit", 
-                        help="Nom complet de l'article (Ex: Smartphone Samsung S21, Cahier 200p).",
-                        required=True
-                    ),
-                    "Catégorie": st.column_config.SelectboxColumn(
-                        "Catégorie", 
-                        options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"],
-                        help="Famille de produits pour vos statistiques."
-                    ),
-                    "Quantité": st.column_config.NumberColumn(
-                        "Qté", 
-                        min_value=1, 
-                        step=1, 
-                        required=True,
-                        help="Nombre d'unités vendues."
-                    ),
-                    "Prix unitaire (FCFA)": st.column_config.NumberColumn(
-                        "Prix Unitaire", 
-                        min_value=0.0, 
-                        step=25.0, 
-                        required=True,
-                        help="Prix d'un seul article en FCFA."
-                    )
+                    "Produit": st.column_config.TextColumn("Désignation Produit", required=True),
+                    "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"]),
+                    "Quantité": st.column_config.NumberColumn("Qté", min_value=1, step=1, required=True),
+                    "Prix unitaire (FCFA)": st.column_config.NumberColumn("Prix Unitaire", min_value=0.0, step=25.0, required=True)
                 }
             )
+            st.markdown('</div>', unsafe_allow_html=True)
 
             submitted = st.form_submit_button("💳 Enregistrer la Facture / Vente", use_container_width=True)
 
