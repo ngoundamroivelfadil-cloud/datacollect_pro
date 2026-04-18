@@ -967,42 +967,85 @@ elif module == "🛒 Commerce":
         st.markdown("### Saisie des données de ventes")
 
         with st.form("form_vente", clear_on_submit=True):
+            st.markdown("#### 🛒 Détails de la Transaction")
             col1, col2, col3 = st.columns(3)
             with col1:
-                produit = st.text_input("Produit ", placeholder="Ex: Smartphone, Cahier...", key="produit")
-                quantite = st.number_input("Quantité ", 1, 100000, 1)
+                vendeur = st.text_input("Vendeur/Agent", key="vendeur_com")
                 region = st.selectbox("Région ", ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"])
             with col2:
-                categorie = st.selectbox("Catégorie ", ["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"])
-                prix_unitaire = st.number_input("Prix unitaire (FCFA) ", 0.0, 10000000.0, step=25.0)
-                vendeur = st.text_input("Vendeur/Agent", key="vendeur")
-            with col3:
                 mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Orange Money" ,"Carte bancaire", "Crypto"])
                 date_vente = st.date_input("Date de vente", value=date.today())
+            with col3:
+                # Espace pour le total (sera mis à jour à la soumission ou visuel)
+                st.info("💡 Saisissez les produits ci-dessous.")
 
-            submitted = st.form_submit_button("💾 Enregistrer la vente", use_container_width=True)
+            st.markdown("#### 📦 Articles du Panier")
+            
+            # Grille de produits par défaut
+            default_sales = pd.DataFrame(
+                [
+                    {"Produit": "", "Catégorie": "Électronique", "Quantité": 1, "Prix unitaire (FCFA)": 0.0},
+                ]
+            )
+
+            edited_sales = st.data_editor(
+                default_sales,
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Produit": st.column_config.TextColumn("Désignation Produit", required=True),
+                    "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"]),
+                    "Quantité": st.column_config.NumberColumn("Qté", min_value=1, step=1, required=True),
+                    "Prix unitaire (FCFA)": st.column_config.NumberColumn("Prix Unitaire", min_value=0.0, step=25.0, required=True)
+                }
+            )
+
+            submitted = st.form_submit_button("💳 Enregistrer la Facture / Vente", use_container_width=True)
 
             if submitted:
-                if produit and prix_unitaire > 0:
-                    montant = round(quantite * prix_unitaire, 2)
+                if vendeur:
                     conn = get_conn()
-                    conn.execute("""
-                        INSERT INTO ventes (produit, categorie, quantite, prix_unitaire,
-                        montant_total, region, vendeur, date_vente, mode_paiement, date_saisie)
-                        VALUES (?,?,?,?,?,?,?,?,?,?)
-                    """, (produit, categorie, quantite, prix_unitaire, montant,
-                          region, vendeur, str(date_vente), mode_paiement,
-                          datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                    total_facture = 0
+                    articles_count = 0
+                    
+                    for index, row in edited_sales.iterrows():
+                        prod = row.get("Produit")
+                        if pd.isna(prod) or str(prod).strip() == "":
+                            continue
+                            
+                        cat = row.get("Catégorie", "Autre")
+                        qte = int(row.get("Quantité", 1))
+                        pu = float(row.get("Prix unitaire (FCFA)", 0.0))
+                        montant = round(qte * pu, 2)
+                        
+                        conn.execute("""
+                            INSERT INTO ventes (produit, categorie, quantite, prix_unitaire,
+                            montant_total, region, vendeur, date_vente, mode_paiement, date_saisie)
+                            VALUES (?,?,?,?,?,?,?,?,?,?)
+                        """, (prod, cat, qte, pu, montant,
+                              region, vendeur, str(date_vente), mode_paiement,
+                              datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                        
+                        total_facture += montant
+                        articles_count += 1
+                        
                     conn.commit()
                     conn.close()
-                    st.markdown(f"""
-                    <div class="success-msg">
-                        ✅ Vente enregistrée ! <strong>{produit}</strong> × {quantite} = 
-                        <strong>{montant:,.0f} FCFA</strong>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    
+                    if articles_count > 0:
+                        st.markdown(f"""
+                        <div class="success-msg" style="border-left: 5px solid #00d084;">
+                            🎉 <strong>Vente réussie !</strong><br>
+                            🧾 Facture enregistrée par <strong>{vendeur}</strong><br>
+                            📦 {articles_count} articles traités<br>
+                            💰 TOTAL : <span style="font-size: 1.5rem;">{total_facture:,.0f} FCFA</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.warning("⚠️ Aucun article valide n'a été trouvé dans le panier.")
                 else:
-                    st.error("⚠️ Veuillez remplir tous les champs obligatoires (*)")
+                    st.error("⚠️ Veuillez entrer le nom du vendeur pour valider la transaction.")
 
     # ── IMPORTER ──────────────────────────────────────────────────────────────
     elif page_com == "📤 Importer CSV/Excel":
