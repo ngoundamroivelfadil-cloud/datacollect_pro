@@ -432,52 +432,98 @@ elif module == "📚 Éducation":
         st.markdown("### Saisie des résultats académiques")
 
         with st.form("form_etudiant", clear_on_submit=True):
+            st.markdown("#### 1. Informations de l'Étudiant")
             col1, col2, col3 = st.columns(3)
             with col1:
                 nom = st.text_input("Nom ", key="nom")
                 filiere = st.selectbox("Filière ", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
-                note_cc = st.number_input("Note CC (sur 20) ", 0.0, 20.0, step=0.25)
-                
             with col2:
                 prenom = st.text_input("Prénom ", key="prenom")
                 niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
-                note_TP = st.number_input("Note TP (sur 30)", 0.0, 30.0, step=0.25)
-
             with col3:
                 matricule = st.text_input("Matricule", key="matricule")
-                semestre = st.selectbox("Semestre", ["S1", "S2"])
-                note_examen = st.number_input("Note EE (sur 50) ", 0.0, 50.0, step=0.25)
+                semestre = st.selectbox("Semestre", ["S1", "S2", "S3", "S4", "S5", "S6"])
 
-            col_mat, col_cred = st.columns([3, 1])
-            with col_mat:
-                matiere = st.text_input("Unité d'enseignement ", placeholder="Ex: INF232 Analyse de données...", key="Unité d'enseignement")
-            with col_cred:
-                credits = st.number_input("Crédits", min_value=1.0, max_value=30.0, value=6.0, step=1.0)
+            st.markdown("#### 2. Notes du Semestre (Saisie Multiple)")
+            st.markdown("Remplissez la grille ci-dessous. Vous pouvez ajouter autant de matières que nécessaire en bas de la grille.")
+            
+            # Grille par défaut
+            default_grid = pd.DataFrame(
+                [
+                    {"Matière": "INF232", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                    {"Matière": "INF212", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                    {"Matière": "INF252", "Crédits": 3.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                ]
+            )
+            
+            edited_df = st.data_editor(
+                default_grid, 
+                num_rows="dynamic", 
+                use_container_width=True,
+                column_config={
+                    "Matière": st.column_config.TextColumn("Unité d'enseignement", required=True),
+                    "Crédits": st.column_config.NumberColumn("Crédits", min_value=1.0, max_value=30.0, step=1.0, required=True),
+                    "Note CC (/20)": st.column_config.NumberColumn("Note CC (/20)", min_value=0.0, max_value=20.0, step=0.25),
+                    "Note TP (/30)": st.column_config.NumberColumn("Note TP (/30)", min_value=0.0, max_value=30.0, step=0.25),
+                    "Note EE (/50)": st.column_config.NumberColumn("Note EE (/50)", min_value=0.0, max_value=50.0, step=0.25)
+                }
+            )
 
-            submitted = st.form_submit_button("💾 Enregistrer l'étudiant", use_container_width=True)
+            submitted = st.form_submit_button("💾 Enregistrer le Semestre", use_container_width=True)
 
             if submitted:
-                if nom and prenom and matiere:
-                    note_finale = round((note_cc + note_TP + note_examen) / 5, 2)
-                    ment = mention(note_finale)
+                if nom and prenom and matricule:
                     conn = get_conn()
-                    conn.execute("""
-                        INSERT INTO etudiants (nom, prenom, matricule, filiere, niveau, semestre,
-                        matiere, note_cc, note_tp, note_examen, note_finale, mention, absences, date_saisie, credits)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                    """, (nom, prenom, matricule, filiere, niveau, semestre, matiere,
-                          note_cc, note_TP, note_examen, note_finale, ment, 0,
-                          datetime.now().strftime("%Y-%m-%d %H:%M:%S"), credits))
+                    count = 0
+                    total_credits = 0
+                    somme_points = 0
+                    
+                    for index, row in edited_df.iterrows():
+                        matiere = row.get("Matière")
+                        if pd.isna(matiere) or str(matiere).strip() == "":
+                            continue
+                            
+                        creds = float(row.get("Crédits", 6.0))
+                        if np.isnan(creds): creds = 6.0
+                        
+                        ncc = float(row.get("Note CC (/20)", 0.0))
+                        ntp = float(row.get("Note TP (/30)", 0.0))
+                        nex = float(row.get("Note EE (/50)", 0.0))
+                        if np.isnan(ncc): ncc = 0.0
+                        if np.isnan(ntp): ntp = 0.0
+                        if np.isnan(nex): nex = 0.0
+                        
+                        note_finale = round((ncc + ntp + nex) / 5, 2)
+                        ment = mention(note_finale)
+                        _, points, _ = get_lmd_info(note_finale)
+                        
+                        conn.execute("""
+                            INSERT INTO etudiants (nom, prenom, matricule, filiere, niveau, semestre,
+                            matiere, note_cc, note_tp, note_examen, note_finale, mention, absences, date_saisie, credits)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        """, (nom, prenom, matricule, filiere, niveau, semestre, matiere,
+                              ncc, ntp, nex, note_finale, ment, 0,
+                              datetime.now().strftime("%Y-%m-%d %H:%M:%S"), creds))
+                        count += 1
+                        total_credits += creds
+                        somme_points += points * creds
+                        
                     conn.commit()
                     conn.close()
-                    st.markdown(f"""
-                    <div class="success-msg">
-                        ✅ <strong>{prenom} {nom}</strong> enregistré avec succès !
-                        Note finale : <strong>{note_finale}/20</strong> — Mention : <strong>{ment}</strong>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    
+                    if count > 0:
+                        mgp = somme_points / total_credits if total_credits > 0 else 0
+                        st.markdown(f"""
+                        <div class="success-msg">
+                            ✅ <strong>Semestre enregistré avec succès pour {prenom} {nom} !</strong><br>
+                            📊 {count} Unités d'enseignement ajoutées (Total Crédits: {total_credits:.0f})<br>
+                            🎯 <strong>Moyenne Générale Pondérée (MGP) : {mgp:.2f} / 4.00</strong>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.warning("Aucune matière valide n'a été saisie dans le tableau.")
                 else:
-                    st.error("⚠️ Veuillez remplir tous les champs obligatoires (*)")
+                    st.error("⚠️ Veuillez remplir les informations obligatoires de l'étudiant (Nom, Prénom, Matricule).")
 
     # ── IMPORTER ──────────────────────────────────────────────────────────────
     elif page_edu == "📤 Importer CSV/Excel":
