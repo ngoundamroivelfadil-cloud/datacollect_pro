@@ -243,6 +243,10 @@ def init_db():
             date_saisie TEXT
         )
     """)
+    try:
+        c.execute("ALTER TABLE etudiants ADD COLUMN note_tp REAL DEFAULT 0")
+    except:
+        pass
     c.execute("""
         CREATE TABLE IF NOT EXISTS ventes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -429,21 +433,21 @@ elif module == "📚 Éducation":
                 semestre = st.selectbox("Semestre", ["S1", "S2"])
                 note_examen = st.number_input("Note EE (sur 50) ", 0.0, 50.0, step=0.25)
 
-            matiere = st.text_input("Unité d'enseignement ", placeholder="Ex: INF121 Analyse de données, Algèbre...", key="Unité d'enseignement")
+            matiere= st.text_input("Unité d'enseignement ", placeholder="Ex: INF121 Analyse de données, Algèbre...", key="Unité d'enseignement")
 
             submitted = st.form_submit_button("💾 Enregistrer l'étudiant", use_container_width=True)
 
             if submitted:
                 if nom and prenom and matiere:
-                    note_finale = round(note_cc * 0.4 + note_examen * 0.6, 2)
+                    note_finale = round((note_cc + note_TP + note_examen) / 5, 2)
                     ment = mention(note_finale)
                     conn = get_conn()
                     conn.execute("""
                         INSERT INTO etudiants (nom, prenom, matricule, filiere, niveau, semestre,
-                        matiere, note_cc, note_examen, note_finale, mention, absences, date_saisie)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        matiere, note_cc, note_tp, note_examen, note_finale, mention, absences, date_saisie)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """, (nom, prenom, matricule, filiere, niveau, semestre, matiere,
-                          note_cc, note_examen, note_finale, ment, absences,
+                          note_cc, note_TP, note_examen, note_finale, ment, 0,
                           datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
                     conn.commit()
                     conn.close()
@@ -461,7 +465,7 @@ elif module == "📚 Éducation":
         st.markdown("### Importation de données — Éducation")
         st.markdown("""
         <div class="info-box">
-            📋 <strong>Format attendu :</strong> nom, prenom, matricule, filiere, niveau, semestre, matiere, note_cc, note_examen, absences
+            📋 <strong>Format attendu :</strong> nom, prenom, matricule, filiere, niveau, semestre, matiere, note_cc, note_tp, note_examen
         </div>
         """, unsafe_allow_html=True)
 
@@ -476,11 +480,11 @@ elif module == "📚 Éducation":
                 'matricule': ['20INF001', '20INF002'],
                 'filiere': ['Informatique', 'Informatique'],
                 'niveau': ['Licence 2', 'Licence 2'],
-                'semestre': ['S3', 'S3'],
-                'matiere': ['Analyse de données', 'Analyse de données'],
+                'semestre': ['S1', 'S2'],
+                'matiere': ['Analyse de données', 'Algèbre'],
                 'note_cc': [14.5, 12.0],
-                'note_examen': [13.0, 15.5],
-                'absences': [2, 0]
+                'note_tp': [25.0, 20.5],
+                'note_examen': [38.0, 42.5]
             })
             buffer = io.BytesIO()
             template.to_excel(buffer, index=False)
@@ -502,16 +506,19 @@ elif module == "📚 Éducation":
                     count = 0
                     for _, row in df_import.iterrows():
                         try:
-                            nf = round(float(row.get('note_cc', 0)) * 0.4 + float(row.get('note_examen', 0)) * 0.6, 2)
+                            ncc = float(row.get('note_cc', 0))
+                            ntp = float(row.get('note_tp', 0))
+                            nex = float(row.get('note_examen', 0))
+                            nf = round((ncc + ntp + nex) / 5, 2)
                             ment = mention(nf)
                             conn.execute("""
                                 INSERT INTO etudiants (nom, prenom, matricule, filiere, niveau, semestre,
-                                matiere, note_cc, note_examen, note_finale, mention, absences, date_saisie)
-                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                                matiere, note_cc, note_tp, note_examen, note_finale, mention, absences, date_saisie)
+                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                             """, (row.get('nom',''), row.get('prenom',''), row.get('matricule',''),
                                   row.get('filiere',''), row.get('niveau',''), row.get('semestre',''),
-                                  row.get('matiere',''), row.get('note_cc',0), row.get('note_examen',0),
-                                  nf, ment, row.get('absences',0),
+                                  row.get('matiere',''), ncc, ntp, nex,
+                                  nf, ment, 0,
                                   datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
                             count += 1
                         except: pass
@@ -616,7 +623,7 @@ elif module == "📚 Éducation":
 
             with tab4:
                 st.markdown("**Statistiques descriptives complètes**")
-                stats = df[['note_cc','note_examen','note_finale','absences']].describe().round(3)
+                stats = df[['note_cc','note_tp','note_examen','note_finale']].describe().round(3)
                 stats.index = ['Nb observations','Moyenne','Écart-type','Minimum','Q1 (25%)','Médiane (50%)','Q3 (75%)','Maximum']
                 st.dataframe(stats.style.background_gradient(cmap='RdPu'), use_container_width=True)
 
@@ -631,8 +638,8 @@ elif module == "📚 Éducation":
                                       font_color='#c8c8d8')
                     st.plotly_chart(fig, use_container_width=True)
                 with col2:
-                    fig2 = px.scatter(df, x='absences', y='note_finale',
-                                      title="Impact des absences sur la note",
+                    fig2 = px.scatter(df, x='note_tp', y='note_finale',
+                                      title="Corrélation TP vs Note Finale",
                                       color='mention', template='plotly_dark',
                                       color_discrete_sequence=['#e94560','#a855f7','#00d084','#f59e0b','#64748b'])
                     fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
