@@ -450,9 +450,9 @@ elif module == "📚 Éducation":
             # Grille par défaut
             default_grid = pd.DataFrame(
                 [
-                    {"Matière": "INF232", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
-                    {"Matière": "INF212", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
-                    {"Matière": "INF252", "Crédits": 3.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                    {"Matière": "INF232", "Crédits": 6.0, "Note CC": 0.0, "Note TP": 0.0, "Note EE": 0.0},
+                    {"Matière": "INF212", "Crédits": 6.0, "Note CC": 0.0, "Note TP": 0.0, "Note EE": 0.0},
+                    {"Matière": "MAT232", "Crédits": 6.0, "Note CC": 0.0, "Note TP": None, "Note EE": 0.0}, # Math n'a généralement pas de TP
                 ]
             )
             
@@ -463,9 +463,9 @@ elif module == "📚 Éducation":
                 column_config={
                     "Matière": st.column_config.TextColumn("Unité d'enseignement", required=True),
                     "Crédits": st.column_config.NumberColumn("Crédits", min_value=1.0, max_value=30.0, step=1.0, required=True),
-                    "Note CC (/20)": st.column_config.NumberColumn("Note CC (/20)", min_value=0.0, max_value=20.0, step=0.25),
-                    "Note TP (/30)": st.column_config.NumberColumn("Note TP (/30)", min_value=0.0, max_value=30.0, step=0.25),
-                    "Note EE (/50)": st.column_config.NumberColumn("Note EE (/50)", min_value=0.0, max_value=50.0, step=0.25)
+                    "Note CC": st.column_config.NumberColumn("Note CC", min_value=0.0, max_value=100.0, step=0.25),
+                    "Note TP": st.column_config.NumberColumn("Note TP", min_value=0.0, max_value=100.0, step=0.25),
+                    "Note EE": st.column_config.NumberColumn("Note EE", min_value=0.0, max_value=100.0, step=0.25)
                 }
             )
 
@@ -483,15 +483,16 @@ elif module == "📚 Éducation":
                         if pd.isna(matiere) or str(matiere).strip() == "":
                             continue
                             
-                        creds = float(row.get("Crédits", 6.0))
-                        if np.isnan(creds): creds = 6.0
+                        val_creds = row.get("Crédits")
+                        creds = float(val_creds) if pd.notna(val_creds) else 6.0
                         
-                        ncc = float(row.get("Note CC (/20)", 0.0))
-                        ntp = float(row.get("Note TP (/30)", 0.0))
-                        nex = float(row.get("Note EE (/50)", 0.0))
-                        if np.isnan(ncc): ncc = 0.0
-                        if np.isnan(ntp): ntp = 0.0
-                        if np.isnan(nex): nex = 0.0
+                        val_ncc = row.get("Note CC")
+                        val_ntp = row.get("Note TP")
+                        val_nex = row.get("Note EE")
+                        
+                        ncc = float(val_ncc) if pd.notna(val_ncc) else 0.0
+                        ntp = float(val_ntp) if pd.notna(val_ntp) else 0.0
+                        nex = float(val_nex) if pd.notna(val_nex) else 0.0
                         
                         note_finale = round((ncc + ntp + nex) / 5, 2)
                         ment = mention(note_finale)
