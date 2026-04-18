@@ -970,8 +970,13 @@ elif module == "🛒 Commerce":
             st.markdown("#### 🛒 Détails de la Transaction")
             col1, col2, col3 = st.columns(3)
             with col1:
-                vendeur = st.text_input("Vendeur/Agent", key="vendeur_com")
-                region = st.selectbox("Région ", ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"])
+                vendeur = st.text_input("Vendeur / Agent", 
+                                        help="Nom de la personne qui effectue la vente (Caissier, Commercial ou Gérant).", 
+                                        placeholder="Ex: Paul, Marie, Agent_01",
+                                        key="vendeur_com")
+                region = st.selectbox("Région de vente", 
+                                      ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"],
+                                      help="Zone géographique où l'échange a eu lieu.")
             with col2:
                 mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Orange Money" ,"Carte bancaire", "Crypto"])
                 date_vente = st.date_input("Date de vente", value=date.today())
@@ -994,10 +999,30 @@ elif module == "🛒 Commerce":
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Produit": st.column_config.TextColumn("Désignation Produit", required=True),
-                    "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"]),
-                    "Quantité": st.column_config.NumberColumn("Qté", min_value=1, step=1, required=True),
-                    "Prix unitaire (FCFA)": st.column_config.NumberColumn("Prix Unitaire", min_value=0.0, step=25.0, required=True)
+                    "Produit": st.column_config.TextColumn(
+                        "Désignation Produit", 
+                        help="Nom complet de l'article (Ex: Smartphone Samsung S21, Cahier 200p).",
+                        required=True
+                    ),
+                    "Catégorie": st.column_config.SelectboxColumn(
+                        "Catégorie", 
+                        options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"],
+                        help="Famille de produits pour vos statistiques."
+                    ),
+                    "Quantité": st.column_config.NumberColumn(
+                        "Qté", 
+                        min_value=1, 
+                        step=1, 
+                        required=True,
+                        help="Nombre d'unités vendues."
+                    ),
+                    "Prix unitaire (FCFA)": st.column_config.NumberColumn(
+                        "Prix Unitaire", 
+                        min_value=0.0, 
+                        step=25.0, 
+                        required=True,
+                        help="Prix d'un seul article en FCFA."
+                    )
                 }
             )
 
