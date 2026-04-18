@@ -227,6 +227,26 @@ label { color: #c8c8d8 !important; }
 [data-testid="stMetricValue"] { color: #e8e8f0 !important; font-family: 'Syne', sans-serif !important; }
 [data-testid="stMetricLabel"] { color: #8888a8 !important; }
 [data-testid="stMetricDelta"] svg { fill: currentColor !important; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 1.8rem !important;
+    }
+    .stat-number {
+        font-size: 1.5rem !important;
+    }
+    .main .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    /* Make columns stack with more breathing room */
+    [data-testid="column"] {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        margin-bottom: 1rem !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
