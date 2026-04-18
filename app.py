@@ -445,7 +445,6 @@ elif module == "📚 Éducation":
                 niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
             with col3:
                 matricule = st.text_input("Matricule", key="matricule")
-                semestre = st.selectbox("Semestre", ["S1", "S2", "S3", "S4", "S5", "S6"])
 
             st.markdown("#### 2. Notes du Semestre (Saisie Multiple)")
             st.markdown("Remplissez la grille ci-dessous. Vous pouvez ajouter autant de matières que nécessaire en bas de la grille.")
@@ -453,9 +452,9 @@ elif module == "📚 Éducation":
             # Grille par défaut
             default_grid = pd.DataFrame(
                 [
-                    {"Matière": "INF232", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
-                    {"Matière": "INF212", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
-                    {"Matière": "MAT232", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": None, "Note EE (/50)": 0.0}, # Math n'a pas de TP !
+                    {"Matière": "INF232", "Semestre": "S1", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                    {"Matière": "INF212", "Semestre": "S1", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                    {"Matière": "MAT232", "Semestre": "S2", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": None, "Note EE (/50)": 0.0}, # Math n'a pas de TP !
                 ]
             )
             
@@ -466,6 +465,7 @@ elif module == "📚 Éducation":
                 hide_index=True,
                 column_config={
                     "Matière": st.column_config.TextColumn("Unité d'enseignement", required=True),
+                    "Semestre": st.column_config.SelectboxColumn("Semestre", options=["S1", "S2", "S3", "S4", "S5", "S6"], required=True),
                     "Crédits": st.column_config.NumberColumn("Crédits", min_value=1.0, max_value=30.0, step=1.0, required=True),
                     "Note CC (/20)": st.column_config.NumberColumn("Note CC (/20)", min_value=0.0, max_value=20.0, step=0.25),
                     "Note TP (/30)": st.column_config.NumberColumn("Note TP (/30)", min_value=0.0, max_value=30.0, step=0.25),
@@ -479,14 +479,14 @@ elif module == "📚 Éducation":
                 if nom and prenom and matricule:
                     conn = get_conn()
                     count = 0
-                    total_credits = 0
-                    somme_points = 0
+                    stats_sem = {}
                     
                     for index, row in edited_df.iterrows():
                         matiere = row.get("Matière")
                         if pd.isna(matiere) or str(matiere).strip() == "":
                             continue
-                            
+                        
+                        semestre = row.get("Semestre", "S1")   
                         val_creds = row.get("Crédits")
                         creds = float(val_creds) if pd.notna(val_creds) else 6.0
                         
@@ -497,8 +497,6 @@ elif module == "📚 Éducation":
                         ncc = float(val_ncc) if pd.notna(val_ncc) else 0.0
                         nex = float(val_nex) if pd.notna(val_nex) else 0.0
                         
-                        # Si la case TP a été supprimée ou laissée vide (None/NaN) pour une matière (ex: Math)
-                        # Le calcul se fait proportionnellement à 70 points (CC/20 + EE/50) qu'on étend à 100 points
                         if pd.isna(val_ntp):
                             ntp = 0.0
                             note_finale = round((ncc + nex) / 3.5, 2)
@@ -516,22 +514,37 @@ elif module == "📚 Éducation":
                         """, (nom, prenom, matricule, filiere, niveau, semestre, matiere,
                               ncc, ntp, nex, note_finale, ment, 0,
                               datetime.now().strftime("%Y-%m-%d %H:%M:%S"), creds))
+                              
+                        if semestre not in stats_sem:
+                            stats_sem[semestre] = {'credits': 0, 'points': 0}
+                        stats_sem[semestre]['credits'] += creds
+                        stats_sem[semestre]['points'] += points * creds
                         count += 1
-                        total_credits += creds
-                        somme_points += points * creds
                         
                     conn.commit()
                     conn.close()
                     
                     if count > 0:
-                        mgp = somme_points / total_credits if total_credits > 0 else 0
                         st.markdown(f"""
                         <div class="success-msg">
-                            ✅ <strong>Semestre enregistré avec succès pour {prenom} {nom} !</strong><br>
-                            📊 {count} Unités d'enseignement ajoutées (Total Crédits: {total_credits:.0f})<br>
-                            🎯 <strong>Moyenne Générale Pondérée (MGP) : {mgp:.2f} / 4.00</strong>
+                            ✅ <strong>Bilan Académique enregistré avec succès pour {prenom} {nom} !</strong><br>
+                            📊 {count} Unités d'enseignement ont été traitées et sauvegardées.
                         </div>
                         """, unsafe_allow_html=True)
+                        
+                        cols = st.columns(len(stats_sem) + 1)
+                        tot_c = 0
+                        tot_p = 0
+                        for i, sem in enumerate(sorted(stats_sem.keys())):
+                            c = stats_sem[sem]['credits']
+                            p = stats_sem[sem]['points']
+                            tot_c += c
+                            tot_p += p
+                            mgp_s = p / c if c > 0 else 0
+                            cols[i].metric(f"MGP {sem}", f"{mgp_s:.2f} / 4.00")
+                            
+                        mgp_gen = tot_p / tot_c if tot_c > 0 else 0
+                        cols[-1].metric("MGP Générale", f"{mgp_gen:.2f} / 4.00", delta="Bilan")
                     else:
                         st.warning("Aucune matière valide n'a été saisie dans le tableau.")
                 else:
@@ -802,12 +815,18 @@ elif module == "📚 Éducation":
                 df_show.columns = ['Unité d\'Enseignement', 'Crédits', 'CC/20', 'TP/30', 'EE/50', 'Moy/20', 'Cote', 'Points', 'Décision', 'Semestre']
                 st.dataframe(df_show, use_container_width=True)
                 
-                if credits_valides == total_credits and total_credits > 0:
-                    st.markdown(f'<div class="success-msg">✅ Semestre Totalement Validé avec {credits_valides:.0f} crédits obtenus !</div>', unsafe_allow_html=True)
-                elif credits_valides > 0:
-                    st.warning(f"⚠️ Semestre Partiellement Validé (Crédits acquis : {credits_valides:.0f}/{total_credits:.0f}).")
+                if sem_sel == "Tous":
+                    if credits_valides >= 45:
+                        st.markdown(f'<div class="success-msg">🎊 Bilan Annuel : ADMIS EN CLASSE SUPÉRIEURE (Crédits acquis : {credits_valides:.0f}/{total_credits:.0f}) !</div>', unsafe_allow_html=True)
+                    else:
+                        st.error(f"🛑 Bilan Annuel : AJOURNÉ (Redoublement). Seulement {credits_valides:.0f}/{total_credits:.0f} crédits acquis (45 requis pour passage conditionnel).")
                 else:
-                    st.error(f"❌ Semestre Non Validé - Aucun crédit acquis.")
+                    if credits_valides == total_credits and total_credits > 0:
+                        st.markdown(f'<div class="success-msg">✅ Semestre Totalement Validé avec {credits_valides:.0f} crédits obtenus !</div>', unsafe_allow_html=True)
+                    elif credits_valides > 0:
+                        st.warning(f"⚠️ Semestre Partiellement Validé (Crédits acquis : {credits_valides:.0f}/{total_credits:.0f}).")
+                    else:
+                        st.error(f"❌ Semestre Non Validé - Aucun crédit acquis.")
                 
                 st.markdown("---")
                 if st.button("⬅️ Retour à la saisie de données", use_container_width=True):
