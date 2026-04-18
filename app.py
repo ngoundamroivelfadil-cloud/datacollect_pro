@@ -428,7 +428,7 @@ elif module == "📚 Éducation":
                 semestre = st.selectbox("Semestre", ["S1", "S2"])
                
 
-            matiere = st.text_input("Matière ", placeholder="Ex: Analyse de données, Algèbre...", key="matiere")
+            matiere = st.text_input("Unité d'enseignement ", placeholder="Ex: INF121 Analyse de données, Algèbre...", key="Unité d'enseignement")
 
             submitted = st.form_submit_button("💾 Enregistrer l'étudiant", use_container_width=True)
 
