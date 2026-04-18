@@ -453,9 +453,9 @@ elif module == "📚 Éducation":
             # Grille par défaut
             default_grid = pd.DataFrame(
                 [
-                    {"Matière": "INF232", "Crédits": 6.0, "Note CC": 0.0, "Note TP": 0.0, "Note EE": 0.0},
-                    {"Matière": "INF212", "Crédits": 6.0, "Note CC": 0.0, "Note TP": 0.0, "Note EE": 0.0},
-                    {"Matière": "MAT232", "Crédits": 6.0, "Note CC": 0.0, "Note TP": None, "Note EE": 0.0}, # Math n'a généralement pas de TP
+                    {"Matière": "INF232", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                    {"Matière": "INF212", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                    {"Matière": "MAT232", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": None, "Note EE (/50)": 0.0}, # Math n'a pas de TP !
                 ]
             )
             
@@ -467,9 +467,9 @@ elif module == "📚 Éducation":
                 column_config={
                     "Matière": st.column_config.TextColumn("Unité d'enseignement", required=True),
                     "Crédits": st.column_config.NumberColumn("Crédits", min_value=1.0, max_value=30.0, step=1.0, required=True),
-                    "Note CC": st.column_config.NumberColumn("Note CC", min_value=0.0, max_value=100.0, step=0.25),
-                    "Note TP": st.column_config.NumberColumn("Note TP", min_value=0.0, max_value=100.0, step=0.25),
-                    "Note EE": st.column_config.NumberColumn("Note EE", min_value=0.0, max_value=100.0, step=0.25)
+                    "Note CC (/20)": st.column_config.NumberColumn("Note CC (/20)", min_value=0.0, max_value=20.0, step=0.25),
+                    "Note TP (/30)": st.column_config.NumberColumn("Note TP (/30)", min_value=0.0, max_value=30.0, step=0.25),
+                    "Note EE (/50)": st.column_config.NumberColumn("Note EE (/50)", min_value=0.0, max_value=50.0, step=0.25)
                 }
             )
 
@@ -490,15 +490,22 @@ elif module == "📚 Éducation":
                         val_creds = row.get("Crédits")
                         creds = float(val_creds) if pd.notna(val_creds) else 6.0
                         
-                        val_ncc = row.get("Note CC")
-                        val_ntp = row.get("Note TP")
-                        val_nex = row.get("Note EE")
+                        val_ncc = row.get("Note CC (/20)")
+                        val_ntp = row.get("Note TP (/30)")
+                        val_nex = row.get("Note EE (/50)")
                         
                         ncc = float(val_ncc) if pd.notna(val_ncc) else 0.0
-                        ntp = float(val_ntp) if pd.notna(val_ntp) else 0.0
                         nex = float(val_nex) if pd.notna(val_nex) else 0.0
                         
-                        note_finale = round((ncc + ntp + nex) / 5, 2)
+                        # Si la case TP a été supprimée ou laissée vide (None/NaN) pour une matière (ex: Math)
+                        # Le calcul se fait proportionnellement à 70 points (CC/20 + EE/50) qu'on étend à 100 points
+                        if pd.isna(val_ntp):
+                            ntp = 0.0
+                            note_finale = round((ncc + nex) / 3.5, 2)
+                        else:
+                            ntp = float(val_ntp)
+                            note_finale = round((ncc + ntp + nex) / 5, 2)
+                            
                         ment = mention(note_finale)
                         _, points, _ = get_lmd_info(note_finale)
                         
@@ -774,9 +781,21 @@ elif module == "📚 Éducation":
                 credits_valides = df_etu[df_etu['Decision'].isin(['Validé', 'Capitalisé'])]['credits'].sum()
                 
                 c1, c2, c3 = st.columns(3)
-                c1.metric("MGP (GPA) / 4.00", f"{mgp_4:.2f}")
+                c1.metric("MGP (GPA) Globale", f"{mgp_4:.2f} / 4.00")
                 c2.metric("Moyenne Globale", f"{moy_gen:.2f} / 20")
-                c3.metric("Crédits Validés", f"{credits_valides:.0f} / {total_credits:.0f}")
+                c3.metric("Crédits Cumulés", f"{credits_valides:.0f} / {total_credits:.0f}")
+                
+                if sem_sel == "Tous":
+                    semestres_presents = sorted(df_etu['semestre'].unique())
+                    if len(semestres_presents) > 1:
+                        st.markdown("#### 📅 Détail MGP par Semestre")
+                        cols_sem = st.columns(len(semestres_presents))
+                        for i, sem in enumerate(semestres_presents):
+                            df_s = df_etu[df_etu['semestre'] == sem]
+                            tc_s = df_s['credits'].sum()
+                            mgp_s = np.average(df_s['Points'], weights=df_s['credits']) if tc_s > 0 else 0.0
+                            cv_s = df_s[df_s['Decision'].isin(['Validé', 'Capitalisé'])]['credits'].sum()
+                            cols_sem[i].metric(f"MGP {sem}", f"{mgp_s:.2f}", f"{cv_s:.0f}/{tc_s:.0f} Crédits", delta_color="off")
                 
                 st.markdown("#### Relevé par unité d'enseignement")
                 df_show = df_etu[['matiere', 'credits', 'note_cc', 'note_tp', 'note_examen', 'note_finale', 'Grade', 'Points', 'Decision', 'semestre']].copy()
