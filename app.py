@@ -139,10 +139,15 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
 
 /* Inputs */
 .stTextInput input, .stNumberInput input, .stSelectbox select, .stDateInput input {
-    background: #ffffff !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
+    background: #f0f2f6 !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
     border-radius: 10px !important;
     color: #000000 !important;
+}
+
+.stTextInput input::placeholder, .stNumberInput input::placeholder {
+    color: #555555 !important;
+    opacity: 1 !important;
 }
 
 .stTextInput input:focus, .stNumberInput input:focus {
