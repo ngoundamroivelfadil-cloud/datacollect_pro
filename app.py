@@ -278,11 +278,13 @@ def get_ventes():
     return df
 
 def mention(note):
-    if note >= 16: return "Très Bien"
-    elif note >= 14: return "Bien"
-    elif note >= 12: return "Assez Bien"
-    elif note >= 10: return "Passable"
-    else: return "Insuffisant"
+    # La note totale sur 100 est convertie sur 20. Appliquons le barème :
+    if note >= 16: return "A (Très bien/Excellent)" # >= 80/100
+    elif note >= 14: return "B+ et A- (Bien)"       # >= 70/100
+    elif note >= 12: return "B- et B (Assez Bien)"  # >= 60/100
+    elif note >= 10: return "C et C+ (Passable)"    # >= 50/100
+    elif note >= 8: return "D+ et C- (Capitaliser)" # >= 40/100
+    else: return "F (Echec)" # < 40
 
 # ─── INIT ──────────────────────────────────────────────────────────────────────
 init_db()
@@ -690,7 +692,8 @@ elif module == "📚 Éducation":
             else:
                 nom_etu = df_etu['nom'].iloc[0]
                 prenom_etu = df_etu['prenom'].iloc[0]
-                st.markdown(f"**Étudiant :** {prenom_etu} {nom_etu} | **Matricule :** {matricule_sel}")
+                niveau_etu = df_etu['niveau'].iloc[0]
+                st.markdown(f"**Étudiant :** {prenom_etu} {nom_etu} | **Matricule :** {matricule_sel} | **Niveau :** {niveau_etu}")
                 
                 if 'credits' not in df_etu.columns:
                     df_etu['credits'] = 6.0
@@ -717,6 +720,10 @@ elif module == "📚 Éducation":
                     st.markdown(f'<div class="success-msg">✅ Semestre Validé avec {credits_valides:.0f} crédits obtenus !</div>', unsafe_allow_html=True)
                 else:
                     st.error(f"❌ Semestre Non Validé - Moyenne insuffisante pour valider le(s) semestre(s).")
+                
+                st.markdown("---")
+                if st.button("⬅️ Retour à la saisie de données", use_container_width=True):
+                    st.info("💡 Remontez tout simplement en haut de la page et choisissez **'➕ Saisir des données'** dans la petite boîte de Navigation.")
 
     # ── TOUTES DONNÉES ────────────────────────────────────────────────────────
     elif page_edu == "🗃️ Voir toutes les données":
