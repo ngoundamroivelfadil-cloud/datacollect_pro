@@ -303,12 +303,12 @@ with st.sidebar:
     if module == "📚 Éducation":
         page_edu = st.selectbox(
             "Navigation",
-            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données"]
+            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
         )
     elif module == "🛒 Commerce":
         page_com = st.selectbox(
             "Navigation",
-            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données"]
+            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
         )
 
     st.markdown("""
@@ -658,6 +658,83 @@ elif module == "📚 Éducation":
             csv = df_filtered.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Exporter en CSV", csv, "etudiants.csv", "text/csv", use_container_width=True)
 
+    # ── PREDICTION IA ─────────────────────────────────────────────────────────
+    elif page_edu == "🤖 Prédiction (IA)":
+        st.markdown("### 🤖 Prédiction (Régression Linéaire)")
+        df = get_etudiants()
+        if len(df) < 3:
+            st.warning("⚠️ Pas assez de données pour l'apprentissage. Veuillez saisir au moins 3 étudiants.")
+        else:
+            st.markdown("Dans ce module de **Machine Learning**, nous utilisons la régression linéaire simple pour prédire la Note d'Examen en fonction de la Note de CC.")
+            
+            x = df['note_cc'].values
+            y = df['note_examen'].values
+            a, b = np.polyfit(x, y, 1)
+            
+            st.info(f"**Équation du modèle :** Note Examen = {a:.2f} × (Note CC) + {b:.2f}")
+            
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.markdown("#### Testez le modèle")
+                cc_input = st.number_input("Entrez une note de CC (sur 20)", 0.0, 20.0, 10.0, step=0.5)
+                pred_examen = a * cc_input + b
+                pred_examen = max(0, min(20, pred_examen))
+                
+                pred_finale = cc_input * 0.4 + pred_examen * 0.6
+                
+                st.markdown(f'''
+                <div class="metric-card edu-card">
+                    <div style="font-size:0.9rem; color:#8888a8;">Note d'Examen estimée :</div>
+                    <div style="font-size:2rem; font-weight:800; color:#e94560;">{pred_examen:.2f} / 20</div>
+                    <hr>
+                    <div style="font-size:0.9rem; color:#8888a8;">Note Finale estimée :</div>
+                    <div style="font-size:1.5rem; font-weight:700; color:#e8e8f0;">{pred_finale:.2f} / 20</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+            with col2:
+                fig = px.scatter(df, x='note_cc', y='note_examen', color='mention',
+                                 title="Droite de régression (CC vs Examen)",
+                                 template='plotly_dark')
+                x_range = np.array([0, 20])
+                fig.add_trace(go.Scatter(x=x_range, y=a*x_range + b, 
+                                         mode='lines', name='Tendance linéaire',
+                                         line=dict(color='#00d084', width=3, dash='dash')))
+                fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#c8c8d8')
+                st.plotly_chart(fig, use_container_width=True)
+
+    # ── ADMINISTRATION ────────────────────────────────────────────────────────
+    elif page_edu == "⚙️ Administration":
+        st.markdown("### ⚙️ Administration & Nettoyage")
+        st.markdown("Espace réservé à la maintenance de la base de données.")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("#### Supprimer un étudiant")
+            df = get_etudiants()
+            if df.empty:
+                st.info("La base est vide.")
+            else:
+                etu_list = df['id'].astype(str) + " - " + df['prenom'] + " " + df['nom'] + " (" + df['matricule'] + ")"
+                to_delete = st.selectbox("Sélectionnez l'étudiant à supprimer", df['id'].tolist(), format_func=lambda x: etu_list[df['id'] == x].values[0])
+                if st.button("🗑️ Supprimer la sélection", key="btn_del_etu"):
+                    conn = get_conn()
+                    conn.execute("DELETE FROM etudiants WHERE id=?", (to_delete,))
+                    conn.commit()
+                    conn.close()
+                    st.success("Étudiant supprimé avec succès !")
+                    st.rerun()
+                    
+        with col2:
+            st.markdown("#### Zone de Danger")
+            if st.button("🚨 Vider TOUTE la base Éducation", help="Action irréversible !"):
+                conn = get_conn()
+                conn.execute("DELETE FROM etudiants")
+                conn.commit()
+                conn.close()
+                st.success("La base de données Éducation a été entièrement vidée.")
+                st.rerun()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE: COMMERCE
@@ -777,6 +854,25 @@ elif module == "🛒 Commerce":
         if df.empty:
             st.warning("⚠️ Aucune donnée disponible. Commencez par saisir ou importer des données.")
         else:
+            st.markdown("#### 📅 Filtres temporel")
+            df['date_vente'] = pd.to_datetime(df['date_vente'], errors='coerce')
+            valid_dates = df.dropna(subset=['date_vente'])
+            min_date = valid_dates['date_vente'].min().date() if not valid_dates.empty else date(2020, 1, 1)
+            max_date = valid_dates['date_vente'].max().date() if not valid_dates.empty else date.today()
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                start_date = st.date_input("Date de début", value=min_date, min_value=min_date, max_value=max_date)
+            with c2:
+                end_date = st.date_input("Date de fin", value=max_date, min_value=min_date, max_value=max_date)
+                
+            mask = (df['date_vente'].dt.date >= start_date) & (df['date_vente'].dt.date <= end_date)
+            df = df.loc[mask]
+            
+            if df.empty:
+                st.warning("Aucune vente sur cette période.")
+                st.stop()
+
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1: st.metric("📦 Total ventes", len(df))
             with col2: st.metric("💰 CA Total", f"{df['montant_total'].sum():,.0f} FCFA")
@@ -905,3 +1001,73 @@ elif module == "🛒 Commerce":
 
             csv = df_filtered.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Exporter en CSV", csv, "ventes.csv", "text/csv", use_container_width=True)
+
+    # ── PREDICTION IA ─────────────────────────────────────────────────────────
+    elif page_com == "🤖 Prédiction (IA)":
+        st.markdown("### 🤖 Prédiction (Régression Linéaire) - Ventes")
+        df = get_ventes()
+        if len(df) < 3:
+            st.warning("⚠️ Pas assez de données pour l'apprentissage. Veuillez saisir au moins 3 ventes.")
+        else:
+            st.markdown("Ce module d'**Intelligence Artificielle** utilise une régression linéaire simple pour modéliser le Montant Total en fonction de la Quantité vendue.")
+            
+            x = df['quantite'].values
+            y = df['montant_total'].values
+            a, b = np.polyfit(x, y, 1)
+            
+            st.info(f"**Modèle linéaire global :** Montant Total = {a:.2f} × Quantité + {b:.2f} FCFA")
+            
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.markdown("#### Estimateur de CA global")
+                qt_input = st.number_input("Entrez une quantité suggérée", 1, 10000, 10)
+                pred_ca = a * qt_input + b
+                pred_ca = max(0, pred_ca)
+                
+                st.markdown(f'''
+                <div class="metric-card com-card">
+                    <div style="font-size:0.9rem; color:#8888a8;">Chiffre d'Affaires estimé :</div>
+                    <div style="font-size:2rem; font-weight:800; color:#00d084;">{pred_ca:,.0f} FCFA</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+            with col2:
+                fig = px.scatter(df, x='quantite', y='montant_total', color='categorie',
+                                 title="Droite de régression (Quantité vs Montant)",
+                                 template='plotly_dark')
+                x_range = np.array([df['quantite'].min(), df['quantite'].max()])
+                fig.add_trace(go.Scatter(x=x_range, y=a*x_range + b, 
+                                         mode='lines', name='Tendance',
+                                         line=dict(color='#e94560', width=3, dash='dash')))
+                fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color='#c8c8d8')
+                st.plotly_chart(fig, use_container_width=True)
+
+    # ── ADMINISTRATION ────────────────────────────────────────────────────────
+    elif page_com == "⚙️ Administration":
+        st.markdown("### ⚙️ Administration & Nettoyage (Ventes)")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("#### Supprimer une vente")
+            df = get_ventes()
+            if df.empty:
+                st.info("La base est vide.")
+            else:
+                vente_list = df['id'].astype(str) + " - " + df['produit'] + " (" + df['montant_total'].astype(str) + " FCFA)"
+                to_delete = st.selectbox("Sélectionnez la vente à supprimer", df['id'].tolist(), format_func=lambda x: vente_list[df['id'] == x].values[0])
+                if st.button("🗑️ Supprimer la sélection", key="btn_del_vente"):
+                    conn = get_conn()
+                    conn.execute("DELETE FROM ventes WHERE id=?", (to_delete,))
+                    conn.commit()
+                    conn.close()
+                    st.success("Vente supprimée avec succès !")
+                    st.rerun()
+                    
+        with col2:
+            st.markdown("#### Zone de Danger")
+            if st.button("🚨 Vider TOUTE la base Commerce", help="Action irréversible !"):
+                conn = get_conn()
+                conn.execute("DELETE FROM ventes")
+                conn.commit()
+                conn.close()
+                st.success("La base de données Commerce a été entièrement vidée.")
+                st.rerun()
