@@ -277,14 +277,23 @@ def get_ventes():
     conn.close()
     return df
 
+def get_lmd_info(note_20):
+    n = note_20 * 5
+    if n >= 80: return "A", 4.00, "Validé"
+    elif n >= 75: return "A-", 3.70, "Validé"
+    elif n >= 70: return "B+", 3.30, "Validé"
+    elif n >= 65: return "B", 3.00, "Validé"
+    elif n >= 60: return "B-", 2.70, "Validé"
+    elif n >= 55: return "C+", 2.30, "Validé"
+    elif n >= 50: return "C", 2.00, "Validé"
+    elif n >= 45: return "C-", 1.70, "Capitalisé"
+    elif n >= 40: return "D+", 1.30, "Capitalisé"
+    elif n >= 35: return "D", 1.00, "Rattrapage"
+    else: return "E/F", 0.00, "Rattrapage"
+
 def mention(note):
-    # La note totale sur 100 est convertie sur 20. Appliquons le barème :
-    if note >= 16: return "A (Très bien/Excellent)" # >= 80/100
-    elif note >= 14: return "B+ et A- (Bien)"       # >= 70/100
-    elif note >= 12: return "B- et B (Assez Bien)"  # >= 60/100
-    elif note >= 10: return "C et C+ (Passable)"    # >= 50/100
-    elif note >= 8: return "D+ et C- (Capitaliser)" # >= 40/100
-    else: return "F (Echec)" # < 40
+    grade, _, _ = get_lmd_info(note)
+    return grade
 
 # ─── INIT ──────────────────────────────────────────────────────────────────────
 init_db()
@@ -682,9 +691,9 @@ elif module == "📚 Éducation":
                 semestres = ["Tous"] + list(df[df['matricule'] == matricule_sel]['semestre'].unique())
                 sem_sel = st.selectbox("Semestre", semestres)
                 
-            df_etu = df[df['matricule'] == matricule_sel]
+            df_etu = df[df['matricule'] == matricule_sel].copy()
             if sem_sel != "Tous":
-                df_etu = df_etu[df_etu['semestre'] == sem_sel]
+                df_etu = df_etu[df_etu['semestre'] == sem_sel].copy()
                 
             st.markdown("---")
             if df_etu.empty:
@@ -698,28 +707,37 @@ elif module == "📚 Éducation":
                 if 'credits' not in df_etu.columns:
                     df_etu['credits'] = 6.0
                     
+                # Compute LMD fields dynamically
+                df_etu[['Grade', 'Points', 'Decision']] = df_etu.apply(
+                    lambda row: pd.Series(get_lmd_info(row['note_finale'])), axis=1
+                )
+                    
                 total_credits = df_etu['credits'].sum()
                 if total_credits > 0:
                     moy_gen = np.average(df_etu['note_finale'], weights=df_etu['credits'])
+                    mgp_4 = np.average(df_etu['Points'], weights=df_etu['credits'])
                 else:
                     moy_gen = df_etu['note_finale'].mean()
+                    mgp_4 = df_etu['Points'].mean()
                     
-                credits_valides = df_etu[df_etu['note_finale'] >= 10]['credits'].sum()
+                credits_valides = df_etu[df_etu['Decision'].isin(['Validé', 'Capitalisé'])]['credits'].sum()
                 
                 c1, c2, c3 = st.columns(3)
-                c1.metric("Moyenne Pondérée", f"{moy_gen:.2f} / 20")
-                c2.metric("Crédits Total", f"{total_credits:.0f}")
-                c3.metric("Crédits Validés", f"{credits_valides:.0f}")
+                c1.metric("MGP (GPA) / 4.00", f"{mgp_4:.2f}")
+                c2.metric("Moyenne Globale", f"{moy_gen:.2f} / 20")
+                c3.metric("Crédits Validés", f"{credits_valides:.0f} / {total_credits:.0f}")
                 
                 st.markdown("#### Relevé par unité d'enseignement")
-                df_show = df_etu[['matiere', 'credits', 'note_cc', 'note_tp', 'note_examen', 'note_finale', 'mention', 'semestre']].copy()
-                df_show.columns = ['Unité d\'Enseignement', 'Crédits', 'Note CC/20', 'Note TP/30', 'Note EE/50', 'Moyenne/20', 'Mention', 'Semestre']
+                df_show = df_etu[['matiere', 'credits', 'note_cc', 'note_tp', 'note_examen', 'note_finale', 'Grade', 'Points', 'Decision', 'semestre']].copy()
+                df_show.columns = ['Unité d\'Enseignement', 'Crédits', 'CC/20', 'TP/30', 'EE/50', 'Moy/20', 'Cote', 'Points', 'Décision', 'Semestre']
                 st.dataframe(df_show, use_container_width=True)
                 
-                if moy_gen >= 10:
-                    st.markdown(f'<div class="success-msg">✅ Semestre Validé avec {credits_valides:.0f} crédits obtenus !</div>', unsafe_allow_html=True)
+                if credits_valides == total_credits and total_credits > 0:
+                    st.markdown(f'<div class="success-msg">✅ Semestre Totalement Validé avec {credits_valides:.0f} crédits obtenus !</div>', unsafe_allow_html=True)
+                elif credits_valides > 0:
+                    st.warning(f"⚠️ Semestre Partiellement Validé (Crédits acquis : {credits_valides:.0f}/{total_credits:.0f}).")
                 else:
-                    st.error(f"❌ Semestre Non Validé - Moyenne insuffisante pour valider le(s) semestre(s).")
+                    st.error(f"❌ Semestre Non Validé - Aucun crédit acquis.")
                 
                 st.markdown("---")
                 if st.button("⬅️ Retour à la saisie de données", use_container_width=True):
