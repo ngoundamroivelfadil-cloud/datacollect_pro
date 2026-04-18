@@ -418,15 +418,16 @@ elif module == "📚 Éducation":
                 nom = st.text_input("Nom ", key="nom")
                 filiere = st.selectbox("Filière ", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
                 note_cc = st.number_input("Note CC (sur 20) ", 0.0, 20.0, step=0.25)
-                note_TP = st.number_input("Note TP (sur 30)", 0.0, 30.0, step=0.25)
+                
             with col2:
                 prenom = st.text_input("Prénom ", key="prenom")
                 niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
-                note_examen = st.number_input("Note EE (sur 50) ", 0.0, 50.0, step=0.25)
+                note_TP = st.number_input("Note TP (sur 30)", 0.0, 30.0, step=0.25)
+
             with col3:
                 matricule = st.text_input("Matricule", key="matricule")
                 semestre = st.selectbox("Semestre", ["S1", "S2"])
-               
+                note_examen = st.number_input("Note EE (sur 50) ", 0.0, 50.0, step=0.25)
 
             matiere = st.text_input("Unité d'enseignement ", placeholder="Ex: INF121 Analyse de données, Algèbre...", key="Unité d'enseignement")
 
