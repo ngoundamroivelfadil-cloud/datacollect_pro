@@ -283,6 +283,14 @@ def init_db():
             mode_paiement TEXT, date_saisie TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS achats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            produit TEXT, categorie TEXT, quantite INTEGER,
+            prix_achat REAL, fournisseur TEXT, date_achat TEXT,
+            date_saisie TEXT
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -297,6 +305,12 @@ def get_etudiants():
 def get_ventes():
     conn = get_conn()
     df = pd.read_sql("SELECT * FROM ventes ORDER BY date_saisie DESC", conn)
+    conn.close()
+    return df
+
+def get_achats():
+    conn = get_conn()
+    df = pd.read_sql("SELECT * FROM achats ORDER BY date_saisie DESC", conn)
     conn.close()
     return df
 
@@ -356,7 +370,7 @@ with st.sidebar:
     elif module == "🛒 Commerce":
         page_com = st.selectbox(
             "Navigation",
-            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
+            ["➕ Saisir des données", "📦 Gestion des Stocks", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
         )
 
     st.markdown("""
@@ -1071,6 +1085,103 @@ elif module == "🛒 Commerce":
                         st.warning("⚠️ Aucun article valide n'a été trouvé dans le panier.")
                 else:
                     st.error("⚠️ Veuillez entrer le nom du vendeur pour valider la transaction.")
+
+    # ── GESTION DES STOCKS ────────────────────────────────────────────────────
+    elif page_com == "📦 Gestion des Stocks":
+        st.markdown("### 📦 Gestion des Stocks & Approvisionnements")
+        
+        tab1, tab2 = st.tabs(["🛒 Nouvel Achat (Stock +)", "📊 État des Stocks"])
+        
+        with tab1:
+            st.markdown("#### Enregistrer un arrivage de marchandise")
+            with st.form("form_achat", clear_on_submit=True):
+                col1, col2 = st.columns(2)
+                with col1:
+                    fournisseur = st.text_input("Fournisseur", placeholder="Ex: Grossiste ABC, Marché Central...")
+                    date_achat = st.date_input("Date d'achat", value=date.today())
+                with col2:
+                    st.info("💡 Utilisez la grille ci-dessous pour lister vos achats.")
+
+                # Grille d'achats
+                df_default_achats = pd.DataFrame([
+                    {"Produit": "", "Catégorie": "Alimentaire", "Quantité": 10, "Prix d'Achat (Unitaire)": 0.0}
+                ])
+                
+                edited_achats = st.data_editor(
+                    df_default_achats,
+                    num_rows="dynamic",
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Produit": st.column_config.TextColumn("Désignation Produit", required=True),
+                        "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"]),
+                        "Quantité": st.column_config.NumberColumn("Qté achetée", min_value=1, step=1),
+                        "Prix d'Achat (Unitaire)": st.column_config.NumberColumn("Prix d'Achat (Cout)", min_value=0.0, step=50.0)
+                    }
+                )
+                
+                btn_achat = st.form_submit_button("📥 Valider l'entrée en Stock", use_container_width=True)
+                
+                if btn_achat:
+                    if fournisseur:
+                        conn = get_conn()
+                        total_depense = 0
+                        count_a = 0
+                        for _, row in edited_achats.iterrows():
+                            p = row.get("Produit")
+                            if pd.isna(p) or str(p).strip() == "": continue
+                            
+                            c = row.get("Catégorie", "Autre")
+                            q = int(row.get("Quantité", 0))
+                            pa = float(row.get("Prix d'Achat (Unitaire)", 0.0))
+                            
+                            conn.execute("""
+                                INSERT INTO achats (produit, categorie, quantite, prix_achat, fournisseur, date_achat, date_saisie)
+                                VALUES (?,?,?,?,?,?,?)
+                            """, (p, c, q, pa, fournisseur, str(date_achat), datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                            
+                            total_depense += (q * pa)
+                            count_a += 1
+                        
+                        conn.commit()
+                        conn.close()
+                        if count_a > 0:
+                            st.markdown(f'<div class="success-msg">✅ {count_a} produits ajoutés au stock ! Dépense totale : {total_depense:,.0f} FCFA</div>', unsafe_allow_html=True)
+                        else:
+                            st.warning("Aucun produit valide saisi.")
+                    else:
+                        st.error("Veuillez préciser le fournisseur.")
+
+        with tab2:
+            st.markdown("#### 📊 Tableau de bord de l'Inventaire")
+            df_achats = get_achats()
+            df_ventes = get_ventes()
+            
+            if df_achats.empty and df_ventes.empty:
+                st.info("Aucune donnée de stock ou de vente disponible.")
+            else:
+                # Calculer les stocks par produit
+                stock_in = df_achats.groupby('produit')['quantite'].sum().reset_index().rename(columns={'quantite': 'Entrées'})
+                stock_out = df_ventes.groupby('produit')['quantite'].sum().reset_index().rename(columns={'quantite': 'Sorties'})
+                
+                # Fusionner pour avoir l'état global
+                inventory = pd.merge(stock_in, stock_out, on='produit', how='outer').fillna(0)
+                inventory['Stock Actuel'] = inventory['Entrées'] - inventory['Sorties']
+                
+                # Styling
+                def color_stock(val):
+                    color = '#00d084' if val > 5 else '#e94560'
+                    return f'color: {color}; font-weight: bold'
+
+                st.dataframe(
+                    inventory.style.applymap(color_stock, subset=['Stock Actuel']),
+                    use_container_width=True
+                )
+                
+                # Alertes
+                stock_bas = inventory[inventory['Stock Actuel'] <= 5]['produit'].tolist()
+                if stock_bas:
+                    st.error(f"🚨 **ALERTE STOCK BAS :** {', '.join(stock_bas)} (Moins de 5 unités restantes !)")
 
     # ── IMPORTER ──────────────────────────────────────────────────────────────
     elif page_com == "📤 Importer CSV/Excel":
