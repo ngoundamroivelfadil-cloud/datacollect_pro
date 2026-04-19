@@ -204,29 +204,6 @@ label { color: #c8c8d8 !important; }
 [data-testid="stMetricValue"] { color: #e8e8f0 !important; font-family: 'Syne', sans-serif !important; }
 [data-testid="stMetricLabel"] { color: #8888a8 !important; }
 [data-testid="stMetricDelta"] svg { fill: currentColor !important; }
-
-/* Hybrid Visibility Fix (Dark Original / Light Adaptive) */
-@media (prefers-color-scheme: light) {
-    .main h1, .main h2, .main h3, .main h4, .main p, .main label, .main span, .main li {
-        color: #1a1a2e !important;
-    }
-    .metric-card div, .metric-card span {
-        color: #1a1a2e !important;
-    }
-    .hero-sub {
-        color: #4a4a6a !important;
-    }
-    .info-box div {
-        color: #4a4a6a !important;
-    }
-    [data-testid="stMetricValue"] { color: #1a1a2e !important; }
-    [data-testid="stMetricLabel"] { color: #4a4a6a !important; }
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span {
-        color: #1a1a2e !important;
-    }
-}
 </style>
 """, unsafe_allow_html=True)
 
