@@ -1834,7 +1834,9 @@ elif module == "🛒 Commerce":
             
             with st.form("form_regu_stock", clear_on_submit=True):
                 # Liste des produits existants pour suggérer
-                all_prods = sorted(list(set(df_ventes['produit'].unique().tolist() + df_achats['produit'].unique().tolist())))
+                df_v_reg = get_ventes()
+                df_a_reg = get_achats()
+                all_prods = sorted(list(set(df_v_reg['produit'].unique().tolist() + df_a_reg['produit'].unique().tolist())))
                 prod_reg = st.selectbox("Produit à régulariser", all_prods if all_prods else ["Aucun produit"])
                 qty_reg = st.number_input("Quantité à ajouter/retirer", value=0, help="Positif pour ajouter (ex: stock retrouvé), Négatif pour retirer (ex: casse).")
                 motif_reg = st.selectbox("Motif de l'ajustement", ["Erreur de saisie", "Casse / Avarie", "Vol / Perte", "Don / Échantillon", "Inventaire physique", "Autre"])
