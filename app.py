@@ -22,35 +22,16 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-/* Root variables - Cool Modern Theme */
+/* Root variables */
 :root {
-    --edu-accent: #ff4d6d; /* Vibrant Magenta/Red */
-    --com-accent: #00e676; /* Neon Green */
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --bg-main: #0f172a; /* Deep Slate */
-    --bg-gradient: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
-    --bg-sidebar: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --card-border: rgba(255, 255, 255, 0.08);
-    --input-bg: rgba(15, 23, 42, 0.5);
-    --shadow-neon-edu: 0 0 20px rgba(255, 77, 109, 0.15);
-    --shadow-neon-com: 0 0 20px rgba(0, 230, 118, 0.15);
-}
-
-@media (prefers-color-scheme: light) {
-    :root {
-        --text-primary: #0f172a;
-        --text-secondary: #475569;
-        --bg-main: #f8fafc;
-        --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        --bg-sidebar: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
-        --card-bg: rgba(255, 255, 255, 0.8);
-        --card-border: rgba(15, 23, 42, 0.08);
-        --input-bg: rgba(255, 255, 255, 0.02);
-        --shadow-neon-edu: 0 4px 12px rgba(0, 0, 0, 0.05);
-        --shadow-neon-com: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
+    --edu-primary: #1a1a2e;
+    --edu-accent: #e94560;
+    --edu-light: #16213e;
+    --com-primary: #0d3b2e;
+    --com-accent: #00d084;
+    --com-light: #1a5c45;
+    --neutral: #f0f2f5;
+    --card-bg: rgba(255,255,255,0.05);
 }
 
 /* Global */
@@ -58,152 +39,171 @@ html, body {
     font-family: 'DM Sans', sans-serif;
 }
 
-.main, .stApp { 
-    background: var(--bg-gradient) !important; 
-    color: var(--text-primary) !important; 
-}
+.main { background: #0a0a0f; color: #e8e8f0; }
+.stApp { background: #0a0a0f; }
 
 /* Sidebar */
 section[data-testid="stSidebar"] {
-    background: var(--bg-sidebar) !important;
-    border-right: 1px solid var(--card-border);
+    background: linear-gradient(180deg, #0d0d1a 0%, #0a1628 100%);
+    border-right: 1px solid rgba(255,255,255,0.08);
 }
 
-section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] .stSelectbox label,
+section[data-testid="stSidebar"] .stRadio label,
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span {
-    color: var(--text-secondary) !important;
-}
-
-/* Sidebar inputs adaptation */
-section[data-testid="stSidebar"] [data-testid="stTextInput"] input,
-section[data-testid="stSidebar"] [data-testid="stNumberInput"] input,
-section[data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] {
-    background: var(--input-bg) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--card-border) !important;
-    border-radius: 8px !important;
+    color: #c8c8d8 !important;
 }
 
 /* Headers */
-h1, h2, h3 { font-family: 'Syne', sans-serif; color: var(--text-primary) !important; letter-spacing: -0.5px; }
+h1, h2, h3 { font-family: 'Syne', sans-serif; }
 
-/* Cards & Components */
+/* Cards */
 .metric-card {
-    background: var(--card-bg) !important;
-    border: 1px solid var(--card-border) !important;
-    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
     padding: 24px;
     margin: 8px 0;
-    backdrop-filter: blur(16px);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    backdrop-filter: blur(10px);
 }
 
-.metric-card:hover {
-    transform: translateY(-5px);
-}
-
-.edu-card { border-left: 5px solid var(--edu-accent) !important; box-shadow: var(--shadow-neon-edu); }
-.com-card { border-left: 5px solid var(--com-accent) !important; box-shadow: var(--shadow-neon-com); }
-
-.metric-card * { color: var(--text-primary) !important; }
+.edu-card { border-left: 4px solid #e94560; }
+.com-card { border-left: 4px solid #00d084; }
 
 .hero-title {
     font-family: 'Syne', sans-serif;
-    font-size: 3.2rem;
+    font-size: 2.8rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #ff4d6d, #7c3aed, #00e676);
+    background: linear-gradient(135deg, #e94560, #a855f7, #00d084);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    line-height: 1;
-    margin-bottom: 15px;
-    letter-spacing: -1.5px;
+    line-height: 1.2;
+    margin-bottom: 8px;
 }
 
 .hero-sub {
-    color: var(--text-secondary);
-    font-size: 1.2rem;
+    color: #8888a8;
+    font-size: 1.1rem;
     font-weight: 300;
-    margin-bottom: 40px;
+    margin-bottom: 32px;
 }
 
 .section-badge {
     display: inline-block;
-    padding: 6px 16px;
-    border-radius: 30px;
-    font-size: 0.7rem;
-    font-weight: 800;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
 }
-.edu-badge { background: rgba(255, 77, 109, 0.15); color: var(--edu-accent); border: 1px solid rgba(255, 77, 109, 0.3); }
-.com-badge { background: rgba(0, 230, 118, 0.15); color: var(--com-accent); border: 1px solid rgba(0, 230, 118, 0.3); }
+
+.edu-badge { background: rgba(233,69,96,0.15); color: #e94560; border: 1px solid rgba(233,69,96,0.3); }
+.com-badge { background: rgba(0,208,132,0.15); color: #00d084; border: 1px solid rgba(0,208,132,0.3); }
+
+.stat-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #8888a8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
+.success-msg {
+    background: linear-gradient(135deg, rgba(0,208,132,0.15), rgba(0,208,132,0.05));
+    border: 1px solid rgba(0,208,132,0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: #00d084;
+    font-weight: 500;
+    margin: 12px 0;
+}
+
+.info-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 12px 0;
+}
+
+/* Redefine specific info-box for consistency */
+.info-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
+}
 
 /* Buttons */
 .stButton > button {
-    background: linear-gradient(135deg, #7c3aed, #ff4d6d) !important;
+    background: linear-gradient(135deg, #e94560, #a855f7) !important;
     color: #ffffff !important;
     border: none !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     font-family: 'Syne', sans-serif !important;
-    font-weight: 700 !important;
-    padding: 12px 28px !important;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3) !important;
+    font-weight: 600 !important;
+    padding: 10px 24px !important;
+    transition: all 0.3s ease !important;
+    letter-spacing: 0.5px !important;
 }
 
 .stButton > button:hover {
-    transform: scale(1.05) !important;
-    box-shadow: 0 8px 25px rgba(255, 77, 109, 0.4) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(233,69,96,0.35) !important;
 }
 
-/* Tabs Adaptation */
+/* Tabs */
 .stTabs [data-baseweb="tab-list"] {
-    background: var(--card-bg);
-    border-radius: 16px;
-    padding: 6px;
-    gap: 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
 }
 
 .stTabs [data-baseweb="tab"] {
-    border-radius: 10px;
+    border-radius: 8px;
+    color: #8888a8;
     font-family: 'Syne', sans-serif;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .stTabs [aria-selected="true"] {
-    background: rgba(124, 58, 237, 0.2) !important;
-    color: #a78bfa !important;
+    background: rgba(233,69,96,0.2) !important;
+    color: #e94560 !important;
 }
 
-/* Metric Widgets */
+/* Dataframe - Removed overflow:hidden to fix stable input positioning */
+.stDataFrame { border-radius: 12px; }
+
+/* Divider */
+hr { border-color: rgba(255,255,255,0.08); }
+
+/* Labels */
+label { color: #c8c8d8 !important; }
+
+/* Metric */
 [data-testid="metric-container"] {
-    background: var(--card-bg) !important;
-    border: 1px solid var(--card-border) !important;
-    border-radius: 20px;
-    padding: 24px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px !important;
 }
 
-[data-testid="stMetricValue"] { color: var(--text-primary) !important; font-family: 'Syne', sans-serif !important; font-weight: 800 !important; font-size: 2.2rem !important; }
-[data-testid="stMetricLabel"] { color: var(--text-secondary) !important; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem !important; }
-
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-    .hero-title { font-size: 2.5rem !important; }
-}
-
-@media (max-width: 768px) {
-    .hero-title { font-size: 2rem !important; }
-    .hero-sub { font-size: 1.1rem !important; }
-    [data-testid="column"] {
-        width: 100% !important;
-        flex: 1 1 100% !important;
-        margin-bottom: 1.5rem !important;
-    }
-}
+[data-testid="stMetricValue"] { color: #e8e8f0 !important; font-family: 'Syne', sans-serif !important; }
+[data-testid="stMetricLabel"] { color: #8888a8 !important; }
+[data-testid="stMetricDelta"] svg { fill: currentColor !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -374,10 +374,10 @@ if module == "🏠 Accueil":
         st.markdown('<span class="section-badge edu-badge">📚 Module Éducation</span>', unsafe_allow_html=True)
         st.markdown("""
         <div class="metric-card edu-card">
-            <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:var(--text-primary); margin-bottom:12px;'>
+            <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:#e8e8f0; margin-bottom:12px;'>
                 Gestion des résultats académiques
             </div>
-            <div style='color:var(--text-secondary); font-size:0.9rem; line-height:1.7;'>
+            <div style='color:#8888a8; font-size:0.9rem; line-height:1.7;'>
                 ✦ Saisie des notes par matière<br>
                 ✦ Calcul automatique des moyennes<br>
                 ✦ Attribution des mentions<br>
@@ -392,10 +392,10 @@ if module == "🏠 Accueil":
         st.markdown('<span class="section-badge com-badge">🛒 Module Commerce</span>', unsafe_allow_html=True)
         st.markdown("""
         <div class="metric-card com-card">
-            <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:var(--text-primary); margin-bottom:12px;'>
+            <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:#e8e8f0; margin-bottom:12px;'>
                 Suivi des performances commerciales
             </div>
-            <div style='color:var(--text-secondary); font-size:0.9rem; line-height:1.7;'>
+            <div style='color:#8888a8; font-size:0.9rem; line-height:1.7;'>
                 ✦ Enregistrement des ventes<br>
                 ✦ Calcul du chiffre d'affaires<br>
                 ✦ Analyse par produit & catégorie<br>
@@ -437,10 +437,10 @@ if module == "🏠 Accueil":
     st.markdown("---")
     st.markdown("""
     <div class="info-box" style='text-align:center;'>
-        <div style='font-family:Syne; font-size:1rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px;'>
+        <div style='font-family:Syne; font-size:1rem; font-weight:700; color:#8888a8; margin-bottom:6px;'>
             🚀 Comment démarrer ?
         </div>
-        <div style='color:var(--text-secondary); font-size:0.88rem;'>
+        <div style='color:#8888a8; font-size:0.88rem;'>
             Sélectionnez un module dans le menu de gauche → Saisissez ou importez vos données → Consultez les analyses
         </div>
     </div>
@@ -911,11 +911,11 @@ elif module == "📚 Éducation":
                 
                 st.markdown(f'''
                 <div class="metric-card edu-card">
-                    <div style="font-size:0.9rem; color:var(--text-secondary);">Note d'Examen estimée :</div>
+                    <div style="font-size:0.9rem; color:#8888a8;">Note d'Examen estimée :</div>
                     <div style="font-size:2rem; font-weight:800; color:#e94560;">{pred_examen:.2f} / 20</div>
                     <hr>
-                    <div style="font-size:0.9rem; color:var(--text-secondary);">Note Finale estimée :</div>
-                    <div style="font-size:1.5rem; font-weight:700; color:var(--text-primary);">{pred_finale:.2f} / 20</div>
+                    <div style="font-size:0.9rem; color:#8888a8;">Note Finale estimée :</div>
+                    <div style="font-size:1.5rem; font-weight:700; color:#e8e8f0;">{pred_finale:.2f} / 20</div>
                 </div>
                 ''', unsafe_allow_html=True)
                 
@@ -1406,7 +1406,7 @@ elif module == "🛒 Commerce":
                 
                 st.markdown(f'''
                 <div class="metric-card com-card">
-                    <div style="font-size:0.9rem; color:var(--text-secondary);">Chiffre d'Affaires estimé :</div>
+                    <div style="font-size:0.9rem; color:#8888a8;">Chiffre d'Affaires estimé :</div>
                     <div style="font-size:2rem; font-weight:800; color:#00d084;">{pred_ca:,.0f} FCFA</div>
                 </div>
                 ''', unsafe_allow_html=True)
