@@ -9,6 +9,12 @@ import os
 from datetime import datetime, date
 import io
 from fpdf import FPDF
+from translations import TRANSLATIONS
+
+def t(key: str) -> str:
+    """Retourne la traduction de la clé selon la langue sélectionnée."""
+    lang = st.session_state.get('lang', 'fr')
+    return TRANSLATIONS.get(lang, TRANSLATIONS['fr']).get(key, key)
 
 # ─── PDF GENERATION UTILS ─────────────────────────────────────────────────────
 class DataCollectPDF(FPDF):
@@ -591,71 +597,84 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # ── LANGUAGE TOGGLE
+    lang_choice = st.radio(
+        t('lang_label'),
+        ["🇫🇷 Français", "🇬🇧 English"],
+        horizontal=True,
+        label_visibility="visible"
+    )
+    st.session_state['lang'] = 'fr' if '🇫🇷' in lang_choice else 'en'
+
+    st.markdown("---")
+
     module = st.radio(
         "📌 Module",
-        ["🏠 Accueil", "📚 Éducation", "🛒 Commerce"],
+        [t('mod_home'), t('mod_edu'), t('mod_com')],
         label_visibility="collapsed"
     )
 
     st.markdown("---")
 
-    if module == "📚 Éducation":
+    if module == t('mod_edu'):
         page_edu = st.selectbox(
             "Navigation",
-            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🎓 Bulletin de notes", "🏆 Palmarès", "📋 Délibérations", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
+            [t('nav_saisir'), t('nav_importer'), t('nav_analyse'), t('nav_bulletin'),
+             t('nav_palmares'), t('nav_delib'), t('nav_voir_tout'), t('nav_ia'), t('nav_admin')]
         )
-    elif module == "🛒 Commerce":
+    elif module == t('mod_com'):
         page_com = st.selectbox(
             "Navigation",
-            ["➕ Saisir des données", "📥 Entrées Stock (Achats)", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
+            [t('nav_saisir_com'), t('nav_stock'), t('nav_importer_com'), t('nav_analyse_com'),
+             t('nav_voir_tout_com'), t('nav_ia_com'), t('nav_admin_com')]
         )
 
-    st.markdown("""
+    lang = st.session_state.get('lang', 'fr')
+    st.markdown(f"""
     <div style='position:fixed; bottom:20px; left:0; right:0; text-align:center;
                 color:#44445a; font-size:0.72rem; padding:0 20px; z-index:99;'>
-        © 2026 ROI-V ABDEL Tous droits réservés<br>
-        <span style='color:#e94560'>♥</span> Concus par NGOUNDAM_V ABDEL_FADIL 
+        {t('footer_rights')}<br>
+        <span style='color:#e94560'>♥</span> {t('footer_author').replace('♥ ', '')}
     </div>
     """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE: ACCUEIL
+# PAGE: ACCUEIL / HOME
 # ═══════════════════════════════════════════════════════════════════════════════
-if module == "🏠 Accueil":
+if module == t('mod_home'):
     col_logo, col_titre = st.columns([1, 4])
     with col_logo:
         st.image("logo.svg", width=100)
     with col_titre:
         st.markdown('<div class="hero-title">DataCollect Pro</div>', unsafe_allow_html=True)
-        st.markdown('<div class="hero-sub">Plateforme intelligente de collecte & d\'analyse descriptive des données</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="hero-sub">{t("home_hero_sub")}</div>', unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     df_edu = get_etudiants()
     df_com = get_ventes()
 
     with col1:
-        # On compte les matricules uniques, pas les lignes de matières
         nb_etudiants = df_edu['matricule'].nunique() if not df_edu.empty else 0
-        st.metric("👨‍🎓 Étudiants inscrits", nb_etudiants)
+        st.metric(t('home_stat_etudiants'), nb_etudiants)
     with col2:
         # On compte les sessions de vente (bons de caisse déposés au même moment)
         nb_ventes = df_com['date_saisie'].nunique() if not df_com.empty else 0
-        st.metric("🧾 Factures générées", nb_ventes)
+        st.metric(t('home_stat_factures'), nb_ventes)
     with col3:
         moy = round(df_edu['note_finale'].mean(), 2) if len(df_edu) > 0 else 0
-        st.metric("📈 Moyenne générale", f"{moy}/20")
+        st.metric(t('home_stat_moy'), f"{moy}/20")
     with col4:
         ca = f"{df_com['montant_total'].sum():,.0f} FCFA" if len(df_com) > 0 else "0 FCFA"
-        st.metric("💰 Chiffre d'affaires", ca)
+        st.metric(t('home_stat_ca'), ca)
 
     st.markdown("---")
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown('<span class="section-badge edu-badge">📚 Module Éducation</span>', unsafe_allow_html=True)
-        st.markdown("""
+        st.markdown(f'<span class="section-badge edu-badge">{t("badge_edu")}</span>', unsafe_allow_html=True)
+        st.markdown(f"""
         <div class="metric-card edu-card">
             <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:#e8e8f0; margin-bottom:12px;'>
-                Gestion des résultats académiques
+                {t('home_edu_title')}
             </div>
             <div style='color:#8888a8; font-size:0.9rem; line-height:1.7;'>
                 ✦ Saisie des notes par matière<br>
@@ -669,11 +688,11 @@ if module == "🏠 Accueil":
         """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown('<span class="section-badge com-badge">🛒 Module Commerce</span>', unsafe_allow_html=True)
-        st.markdown("""
+        st.markdown(f'<span class="section-badge com-badge">{t("badge_com")}</span>', unsafe_allow_html=True)
+        st.markdown(f"""
         <div class="metric-card com-card">
             <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:#e8e8f0; margin-bottom:12px;'>
-                Suivi des performances commerciales
+                {t('home_com_title')}
             </div>
             <div style='color:#8888a8; font-size:0.9rem; line-height:1.7;'>
                 ✦ Enregistrement des ventes<br>
@@ -687,71 +706,67 @@ if module == "🏠 Accueil":
         """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("### 🕒 Derniers Enregistrements")
+    st.markdown(f"### {t('home_recent')}")
     
     col_e, col_v = st.columns(2)
     
     with col_e:
-        st.markdown("**📜 Récemment inscrits (Étudiants)**")
+        st.markdown(f"**{t('home_recent_edu')}**")
         if not df_edu.empty:
-            # On prend le dernier enregistrement par matricule (pour lister les personnes)
             recent_edu = df_edu.sort_values('date_saisie', ascending=False).drop_duplicates('matricule').head(5)
             st.dataframe(recent_edu[['matricule', 'nom', 'filiere', 'niveau']], use_container_width=True, hide_index=True)
         else:
-            st.info("Aucun étudiant enregistré.")
+            st.info(t('home_no_edu'))
 
     with col_v:
-        st.markdown("**💸 Dernières Ventes (Bons de caisse)**")
+        st.markdown(f"**{t('home_recent_com')}**")
         if not df_com.empty:
-            # On groupe par session de saisie pour montrer les transactions
             recent_v = df_com.groupby('date_saisie').agg({
                 'vendeur': 'first',
                 'montant_total': 'sum'
             }).reset_index().sort_values('date_saisie', ascending=False).head(5)
-            
             recent_v.columns = ['Date/Heure Saisie', 'Agent Vendeur', 'Montant Total (FCFA)']
             st.dataframe(recent_v, use_container_width=True, hide_index=True)
         else:
-            st.info("Aucune vente enregistrée.")
+            st.info(t('home_no_com'))
 
     st.markdown("---")
-    st.markdown("""
+    st.markdown(f"""
     <div class="info-box" style='text-align:center;'>
         <div style='font-family:Syne; font-size:1rem; font-weight:700; color:white; margin-bottom:6px;'>
-            🚀 Comment démarrer ?
+            {t('home_how')}
         </div>
         <div style='color:#8888a8; font-size:0.88rem;'>
-            Sélectionnez un module dans le menu de gauche → Saisissez ou importez vos données → Consultez les analyses
+            {t('home_how_text')}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE: ÉDUCATION
+# PAGE: ÉDUCATION / EDUCATION
 # ═══════════════════════════════════════════════════════════════════════════════
-elif module == "📚 Éducation":
-    st.markdown('<span class="section-badge edu-badge">📚 Module Éducation</span>', unsafe_allow_html=True)
+elif module == t('mod_edu'):
+    st.markdown(f'<span class="section-badge edu-badge">{t("badge_edu")}</span>', unsafe_allow_html=True)
 
     # ── SAISIR ────────────────────────────────────────────────────────────────
-    if page_edu == "➕ Saisir des données":
-        st.markdown("### Saisie des résultats académiques")
+    if page_edu == t('nav_saisir'):
+        st.markdown(f"### {t('edu_saisir_title')}")
 
         with st.form("form_etudiant", clear_on_submit=True):
-            st.markdown("#### 1. Informations de l'Étudiant")
+            st.markdown(f"#### {t('edu_info_title')}")
             col1, col2, col3 = st.columns(3)
             with col1:
-                nom = st.text_input("Nom ", key="nom")
-                filiere = st.selectbox("Filière ", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
+                nom = st.text_input(t('edu_nom'), key="nom")
+                filiere = st.selectbox(t('edu_filiere'), ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
             with col2:
-                prenom = st.text_input("Prénom ", key="prenom")
-                niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
+                prenom = st.text_input(t('edu_prenom'), key="prenom")
+                niveau = st.selectbox(t('edu_niveau'), ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
             with col3:
-                matricule = st.text_input("Matricule", key="matricule")
+                matricule = st.text_input(t('edu_matricule'), key="matricule")
 
             st.markdown("---")
-            st.markdown("#### 2. Notes du Semestre (Saisie Multiple)")
-            st.markdown("Remplissez la grille ci-dessous. Vous pouvez ajouter autant de matières que nécessaire.")
+            st.markdown(f"#### {t('edu_notes_title')}")
+            st.markdown(t('edu_notes_help'))
             
             # Grille par défaut
             default_grid = pd.DataFrame(
@@ -777,7 +792,7 @@ elif module == "📚 Éducation":
                 }
             )
 
-            submitted = st.form_submit_button("💾 Enregistrer le Semestre", use_container_width=True)
+            submitted = st.form_submit_button(t('edu_btn_save'), use_container_width=True)
 
             if submitted:
                 if nom and prenom and matricule:
@@ -831,8 +846,8 @@ elif module == "📚 Éducation":
                     if count > 0:
                         st.markdown(f"""
                         <div class="success-msg">
-                            ✅ <strong>Bilan Académique enregistré avec succès pour {prenom} {nom} !</strong><br>
-                            📊 {count} Unités d'enseignement ont été traitées et sauvegardées.
+                            ✅ <strong>{t('edu_success')} {prenom} {nom} !</strong><br>
+                            📊 {count} {t('edu_ue_saved')}
                         </div>
                         """, unsafe_allow_html=True)
                         
@@ -850,12 +865,12 @@ elif module == "📚 Éducation":
                         mgp_gen = tot_p / tot_c if tot_c > 0 else 0
                         cols[-1].metric("MGP Générale", f"{mgp_gen:.2f} / 4.00", delta="Bilan")
                     else:
-                        st.warning("Aucune matière valide n'a été saisie dans le tableau.")
+                        st.warning(t('edu_warn_no_mat'))
                 else:
-                    st.error("⚠️ Veuillez remplir les informations obligatoires de l'étudiant (Nom, Prénom, Matricule).")
+                    st.error(t('edu_warn_fields'))
 
     # ── IMPORTER ──────────────────────────────────────────────────────────────
-    elif page_edu == "📤 Importer CSV/Excel":
+    elif page_edu == t('nav_importer'):
         st.markdown("### Importation de données — Éducation")
         st.markdown("""
         <div class="info-box">
@@ -925,30 +940,30 @@ elif module == "📚 Éducation":
                 st.error(f"Erreur lors de la lecture du fichier : {e}")
 
     # ── ANALYSE ───────────────────────────────────────────────────────────────
-    elif page_edu == "📊 Analyse descriptive":
-        st.markdown("### Analyse descriptive — Éducation")
+    elif page_edu == t('nav_analyse'):
+        st.markdown(f"### {t('edu_analyse_title')}")
         df = get_etudiants()
 
         if df.empty:
-            st.warning("⚠️ Aucune donnée disponible. Commencez par saisir ou importer des données.")
+            st.warning(t('no_data'))
         else:
             # KPIs
             col1, col2, col3, col4, col5 = st.columns(5)
-            with col1: st.metric("👨‍🎓 Total étudiants", len(df))
+            with col1: st.metric(t('edu_kpi_total'), len(df))
             with col2:
                 if 'credits' in df.columns and df['credits'].sum() > 0:
                     moy_pond = np.average(df['note_finale'], weights=df['credits'])
                 else:
                     moy_pond = df['note_finale'].mean()
-                st.metric("📈 Moyenne pondérée", f"{moy_pond:.2f}/20")
-            with col3: st.metric("🏆 Note max", f"{df['note_finale'].max():.2f}/20")
-            with col4: st.metric("📉 Note min", f"{df['note_finale'].min():.2f}/20")
+                st.metric(t('edu_kpi_moy'), f"{moy_pond:.2f}/20")
+            with col3: st.metric(t('edu_kpi_max'), f"{df['note_finale'].max():.2f}/20")
+            with col4: st.metric(t('edu_kpi_min'), f"{df['note_finale'].min():.2f}/20")
             with col5:
                 taux = len(df[df['note_finale'] >= 10]) / len(df) * 100
-                st.metric("✅ Taux de réussite", f"{taux:.1f}%")
+                st.metric(t('edu_kpi_taux'), f"{taux:.1f}%")
 
             st.markdown("---")
-            tab1, tab2, tab3, tab4 = st.tabs(["📊 Distributions", "🎓 Par filière", "📚 Par matière", "📋 Statistiques"])
+            tab1, tab2, tab3, tab4 = st.tabs([t('tab_distrib'), t('tab_filiere'), t('tab_matiere'), t('tab_stats')])
 
             with tab1:
                 col1, col2 = st.columns(2)
@@ -1048,23 +1063,23 @@ elif module == "📚 Éducation":
                     st.plotly_chart(fig2, use_container_width=True)
 
     # ── BULLETIN DE NOTES ─────────────────────────────────────────────────────
-    elif page_edu == "🎓 Bulletin de notes":
-        st.markdown("### 🎓 Bulletin de notes (Relevé Officiel)")
+    elif page_edu == t('nav_bulletin'):
+        st.markdown(f"### 🎓 {t('edu_bulletin_title')}")
         df = get_etudiants()
         if df.empty:
-            st.warning("⚠️ Aucune donnée disponible.")
+            st.warning(t('no_data'))
         else:
             col_search, col_sem = st.columns(2)
             etudiants_uniques = df[['matricule', 'nom', 'prenom']].drop_duplicates()
             etudiants_list = etudiants_uniques['matricule'] + " - " + etudiants_uniques['nom'] + " " + etudiants_uniques['prenom']
             
             with col_search:
-                search_etu = st.selectbox("Sélectionnez un étudiant", etudiants_list.tolist())
+                search_etu = st.selectbox(t('edu_select_etu'), etudiants_list.tolist())
                 matricule_sel = search_etu.split(" - ")[0]
             
             with col_sem:
-                semestres = ["Tous"] + list(df[df['matricule'] == matricule_sel]['semestre'].unique())
-                sem_sel = st.selectbox("Semestre", semestres)
+                semestres = [t('edu_tous')] + list(df[df['matricule'] == matricule_sel]['semestre'].unique())
+                sem_sel = st.selectbox(t('edu_semestre'), semestres)
                 
             df_etu = df[df['matricule'] == matricule_sel].copy()
             if sem_sel != "Tous":
@@ -1127,7 +1142,7 @@ elif module == "📚 Éducation":
                     }
                     pdf_bulletin = generate_bulletin_pdf(df_etu, current_etu_info)
                     st.download_button(
-                        label="📄 Télécharger le Bulletin (PDF)",
+                        label=t('edu_btn_pdf'),
                         data=bytes(pdf_bulletin),
                         file_name=f"Bulletin_{nom_etu}_{sem_sel}.pdf",
                         mime="application/pdf",
@@ -1331,11 +1346,11 @@ elif module == "📚 Éducation":
             st.download_button("📥 Exporter les Délibérations (CSV)", csv_delib, "deliberations.csv", "text/csv", use_container_width=True)
 
     # ── TOUTES DONNÉES ────────────────────────────────────────────────────────
-    elif page_edu == "🗃️ Voir toutes les données":
-        st.markdown("### Toutes les données — Étudiants")
+    elif page_edu == t('nav_voir_tout'):
+        st.markdown(f"### {t('nav_voir_tout')} — Étudiants")
         df = get_etudiants()
         if df.empty:
-            st.warning("⚠️ Aucune donnée disponible.")
+            st.warning(t('no_data'))
         else:
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -1357,14 +1372,14 @@ elif module == "📚 Éducation":
             st.dataframe(df_filtered.drop(columns=['date_saisie']), use_container_width=True)
 
             csv = df_filtered.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Exporter en CSV", csv, "etudiants.csv", "text/csv", use_container_width=True)
+            st.download_button(t('export_csv'), csv, "etudiants.csv", "text/csv", use_container_width=True)
 
     # ── PREDICTION IA ─────────────────────────────────────────────────────────
-    elif page_edu == "🤖 Prédiction (IA)":
-        st.markdown("### 🤖 Prédiction (Régression Linéaire)")
+    elif page_edu == t('nav_ia'):
+        st.markdown(f"### 🤖 {t('ia_title_edu')}")
         df = get_etudiants()
         if len(df) < 3:
-            st.warning("⚠️ Pas assez de données pour l'apprentissage. Veuillez saisir au moins 3 étudiants.")
+            st.warning(t('ia_not_enough'))
         else:
             st.markdown("Dans ce module de **Machine Learning**, nous utilisons la régression linéaire simple pour prédire la Note d'Examen en fonction de la Note de CC.")
             
@@ -1488,26 +1503,26 @@ elif module == "📚 Éducation":
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE: COMMERCE
 # ═══════════════════════════════════════════════════════════════════════════════
-elif module == "🛒 Commerce":
-    st.markdown('<span class="section-badge com-badge">🛒 Module Commerce</span>', unsafe_allow_html=True)
+elif module == t('mod_com'):
+    st.markdown(f'<span class="section-badge com-badge">{t("badge_com")}</span>', unsafe_allow_html=True)
 
     # ── SAISIR ────────────────────────────────────────────────────────────────
-    if page_com == "➕ Saisir des données":
-        st.markdown("### Saisie des données de ventes")
+    if page_com == t('nav_saisir_com'):
+        st.markdown(f"### {t('com_saisir_title')}")
 
         with st.form("form_vente", clear_on_submit=True):
-            st.markdown("#### 🛒 Détails de la Transaction")
+            st.markdown(f"#### {t('com_transaction')}")
             col1, col2, col3 = st.columns(3)
             with col1:
-                vendeur = st.text_input("Vendeur / Agent", help="Identité de l'agent commercial.", placeholder="Ex: Paul", key="vendeur_com")
+                vendeur = st.text_input(t('com_vendeur'), help="Identité de l'agent commercial.", placeholder="Ex: Paul", key="vendeur_com")
             with col2:
-                region = st.selectbox("Région de vente", ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"])
+                region = st.selectbox(t('com_region'), ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"])
             with col3:
-                mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Orange Money" ,"Carte bancaire"])
-                date_vente = st.date_input("Date de vente", value=date.today())
+                mode_paiement = st.selectbox(t('com_paiement'), ["Espèces", "Mobile Money", "Orange Money", "Carte bancaire"])
+                date_vente = st.date_input(t('com_date'), value=date.today())
 
             st.markdown("---")
-            st.markdown("#### 📦 Articles du Panier")
+            st.markdown(f"#### {t('com_panier')}")
             
             # Grille de produits par défaut
             default_sales = pd.DataFrame([{"Produit": "", "Catégorie": "Alimentaire", "Quantité": 1, "Prix unitaire (FCFA)": 0.0}])
@@ -1525,7 +1540,7 @@ elif module == "🛒 Commerce":
                 }
             )
 
-            submitted = st.form_submit_button("💳 Enregistrer la Facture / Vente", use_container_width=True)
+            submitted = st.form_submit_button(t('com_btn_save'), use_container_width=True)
 
             if submitted:
                 if vendeur:
@@ -1591,10 +1606,10 @@ elif module == "🛒 Commerce":
                         st.error("⚠️ Veuillez entrer le nom du vendeur pour valider la transaction.")
 
     # ── GESTION DES STOCKS (ACHATS) ───────────────────────────────────────────
-    elif page_com == "📥 Entrées Stock (Achats)":
-        st.markdown("### 📦 Gestion des Stocks & Approvisionnements")
+    elif page_com == t('nav_stock'):
+        st.markdown(f"### 📦 {t('stock_title')}")
         
-        tab1, tab2, tab3 = st.tabs(["🛒 Nouvel Achat (Stock +)", "📊 État des Stocks", "📜 Historique des Achats"])
+        tab1, tab2, tab3 = st.tabs([t('stock_tab_new'), t('stock_tab_etat'), t('stock_tab_histo')])
         
         with tab1:
             with st.container(border=True):
@@ -1602,8 +1617,8 @@ elif module == "🛒 Commerce":
                 with st.form("form_achat", clear_on_submit=True):
                     col1, col2 = st.columns(2)
                     with col1:
-                        fournisseur = st.text_input("Fournisseur", placeholder="Ex: Grossiste ABC...")
-                        date_achat = st.date_input("Date d'achat", value=date.today())
+                        fournisseur = st.text_input(t('stock_fournisseur'), placeholder="Ex: Grossiste ABC...")
+                        date_achat = st.date_input(t('stock_date'), value=date.today())
                     with col2:
                         st.info("💡 Saisissez vos achats dans la grille ci-dessous.")
 
@@ -1623,7 +1638,7 @@ elif module == "🛒 Commerce":
                         }
                     )
                     
-                    btn_achat = st.form_submit_button("📥 Valider l'entrée en Stock", use_container_width=True)
+                    btn_achat = st.form_submit_button(t('stock_btn_valider'), use_container_width=True)
                 
                 if btn_achat:
                     if fournisseur:
@@ -1792,8 +1807,8 @@ elif module == "🛒 Commerce":
                 st.error(f"Erreur : {e}")
 
     # ── ANALYSE ───────────────────────────────────────────────────────────────
-    elif page_com == "📊 Analyse descriptive":
-        st.markdown("### Analyse descriptive — Commerce")
+    elif page_com == t('nav_analyse_com'):
+        st.markdown(f"### {t('edu_analyse_title').replace('Éducation','Commerce')}")
         df = get_ventes()
 
         if df.empty:
@@ -1922,8 +1937,8 @@ elif module == "🛒 Commerce":
                 st.dataframe(stats.style.background_gradient(cmap='Greens'), use_container_width=True)
 
     # ── TOUTES DONNÉES ────────────────────────────────────────────────────────
-    elif page_com == "🗃️ Voir toutes les données":
-        st.markdown("### Toutes les données — Ventes")
+    elif page_com == t('nav_voir_tout_com'):
+        st.markdown(f"### {t('nav_voir_tout_com')} — Ventes")
         df = get_ventes()
         if df.empty:
             st.warning("⚠️ Aucune donnée disponible.")
@@ -1964,14 +1979,14 @@ elif module == "🛒 Commerce":
             st.dataframe(df_filtered.drop(columns=['date_saisie']), use_container_width=True)
 
             csv = df_filtered.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Exporter en CSV", csv, "ventes.csv", "text/csv", use_container_width=True)
+            st.download_button(t('export_csv'), csv, "ventes.csv", "text/csv", use_container_width=True)
 
     # ── PREDICTION IA ─────────────────────────────────────────────────────────
-    elif page_com == "🤖 Prédiction (IA)":
-        st.markdown("### 🤖 Prédiction (Régression Linéaire) - Ventes")
+    elif page_com == t('nav_ia_com'):
+        st.markdown(f"### 🤖 {t('ia_title_com')}")
         df = get_ventes()
         if len(df) < 3:
-            st.warning("⚠️ Pas assez de données pour l'apprentissage. Veuillez saisir au moins 3 ventes.")
+            st.warning(t('ia_not_enough_com'))
         else:
             st.markdown("Ce module d'**Intelligence Artificielle** utilise une régression linéaire simple pour modéliser le Montant Total en fonction de la Quantité vendue.")
             
@@ -2007,11 +2022,11 @@ elif module == "🛒 Commerce":
                 st.plotly_chart(fig, use_container_width=True)
 
     # ── ADMINISTRATION ────────────────────────────────────────────────────────
-    elif page_com == "⚙️ Administration":
-        st.markdown("### ⚙️ Administration & Nettoyage (Ventes)")
+    elif page_com == t('nav_admin_com'):
+        st.markdown(f"### ⚙️ {t('admin_com_title')}")
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("#### Supprimer une vente")
+            st.markdown(f"#### {t('admin_com_del_vente')}")
             df = get_ventes()
             if df.empty:
                 st.info("La base est vide.")
