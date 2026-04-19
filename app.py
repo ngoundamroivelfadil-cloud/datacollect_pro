@@ -602,7 +602,7 @@ with st.sidebar:
     if module == "📚 Éducation":
         page_edu = st.selectbox(
             "Navigation",
-            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🎓 Bulletin de notes", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
+            ["➕ Saisir des données", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🎓 Bulletin de notes", "🏆 Palmarès", "📋 Délibérations", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
         )
     elif module == "🛒 Commerce":
         page_com = st.selectbox(
@@ -1152,6 +1152,183 @@ elif module == "📚 Éducation":
                 st.markdown("---")
                 if st.button("⬅️ Retour à la saisie de données", use_container_width=True):
                     st.info("💡 Remontez tout simplement en haut de la page et choisissez **'➕ Saisir des données'** dans la petite boîte de Navigation.")
+
+    # ── PALMARÈS ──────────────────────────────────────────────────────────────
+    elif page_edu == "🏆 Palmarès":
+        st.markdown("### 🏆 Palmarès — Classement des Étudiants")
+        df = get_etudiants()
+        if df.empty:
+            st.warning("⚠️ Aucune donnée disponible.")
+        else:
+            if 'credits' not in df.columns:
+                df['credits'] = 6.0
+
+            # Filtres
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                filtre_fil = st.selectbox("Filtrer par filière", ["Toutes"] + sorted(df['filiere'].unique().tolist()))
+            with c2:
+                filtre_niv = st.selectbox("Filtrer par niveau", ["Tous"] + sorted(df['niveau'].unique().tolist()))
+            with c3:
+                filtre_sem = st.selectbox("Filtrer par semestre", ["Tous"] + sorted(df['semestre'].unique().tolist()))
+
+            df_f = df.copy()
+            if filtre_fil != "Toutes": df_f = df_f[df_f['filiere'] == filtre_fil]
+            if filtre_niv != "Tous":   df_f = df_f[df_f['niveau']  == filtre_niv]
+            if filtre_sem != "Tous":   df_f = df_f[df_f['semestre'] == filtre_sem]
+
+            # Calcul de la moyenne pondérée par étudiant
+            def moy_ponderee(grp):
+                tc = grp['credits'].sum()
+                if tc > 0:
+                    return np.average(grp['note_finale'], weights=grp['credits'])
+                return grp['note_finale'].mean()
+
+            palmares = (
+                df_f.groupby(['matricule', 'nom', 'prenom', 'filiere', 'niveau'])
+                .apply(moy_ponderee)
+                .reset_index()
+                .rename(columns={0: 'Moyenne Pondérée'})
+                .sort_values('Moyenne Pondérée', ascending=False)
+                .reset_index(drop=True)
+            )
+            palmares['Rang'] = range(1, len(palmares) + 1)
+            palmares['Mention'] = palmares['Moyenne Pondérée'].apply(lambda x: mention(x))
+            palmares['Moyenne Pondérée'] = palmares['Moyenne Pondérée'].round(2)
+
+            # Médailles top 3
+            def medal(rang):
+                if rang == 1: return "🥇"
+                if rang == 2: return "🥈"
+                if rang == 3: return "🥉"
+                return str(rang)
+            palmares['Rang'] = palmares['Rang'].apply(medal)
+
+            st.markdown(f"**{len(palmares)} étudiant(s) classé(s)**")
+
+            # Top 3 en vedette
+            top3 = palmares.head(3)
+            cols_top = st.columns(len(top3))
+            for i, (_, r) in enumerate(top3.iterrows()):
+                with cols_top[i]:
+                    st.markdown(f"""
+                    <div class="metric-card edu-card" style="text-align:center;">
+                        <div style="font-size:2rem;">{r['Rang']}</div>
+                        <div style="font-family:Syne; font-weight:800; color:#e8e8f0; font-size:1rem;">{r['prenom']} {r['nom']}</div>
+                        <div style="color:#8888a8; font-size:0.8rem;">{r['filiere']} — {r['niveau']}</div>
+                        <div style="font-size:1.8rem; font-weight:800; color:#e94560; margin-top:8px;">{r['Moyenne Pondérée']}/20</div>
+                        <div style="color:#a855f7;">{r['Mention']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.markdown("#### Classement complet")
+
+            def style_rang(val):
+                if "🥇" in str(val): return "color:#fbbf24; font-weight:bold; font-size:1.2rem"
+                if "🥈" in str(val): return "color:#c0c0c0; font-weight:bold"
+                if "🥉" in str(val): return "color:#cd7f32; font-weight:bold"
+                return ""
+
+            st.dataframe(
+                palmares[['Rang', 'matricule', 'prenom', 'nom', 'filiere', 'niveau', 'Moyenne Pondérée', 'Mention']]
+                .rename(columns={'matricule':'Matricule','prenom':'Prénom','nom':'Nom','filiere':'Filière','niveau':'Niveau'})
+                .style.map(style_rang, subset=['Rang']),
+                use_container_width=True, hide_index=True
+            )
+
+            csv_pal = palmares.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Exporter le Palmarès (CSV)", csv_pal, "palmares.csv", "text/csv", use_container_width=True)
+
+    # ── DÉLIBÉRATIONS ─────────────────────────────────────────────────────────
+    elif page_edu == "📋 Délibérations":
+        st.markdown("### 📋 Table des Délibérations Officielles")
+        df = get_etudiants()
+        if df.empty:
+            st.warning("⚠️ Aucune donnée disponible.")
+        else:
+            if 'credits' not in df.columns:
+                df['credits'] = 6.0
+
+            # Filtres
+            c1, c2 = st.columns(2)
+            with c1:
+                filtre_fil = st.selectbox("Filière", ["Toutes"] + sorted(df['filiere'].unique().tolist()), key="delib_fil")
+            with c2:
+                filtre_niv = st.selectbox("Niveau", ["Tous"] + sorted(df['niveau'].unique().tolist()), key="delib_niv")
+
+            df_f = df.copy()
+            if filtre_fil != "Toutes": df_f = df_f[df_f['filiere'] == filtre_fil]
+            if filtre_niv != "Tous":   df_f = df_f[df_f['niveau']  == filtre_niv]
+
+            # Calcul par étudiant
+            def delib_etudiant(grp):
+                tc = grp['credits'].sum()
+                if tc > 0:
+                    moy = np.average(grp['note_finale'], weights=grp['credits'])
+                    mgp = np.average(grp.apply(lambda r: get_lmd_info(r['note_finale'])[1], axis=1), weights=grp['credits'])
+                else:
+                    moy = grp['note_finale'].mean()
+                    mgp = grp.apply(lambda r: get_lmd_info(r['note_finale'])[1], axis=1).mean()
+
+                credits_val = grp[grp['note_finale'] >= 10]['credits'].sum()
+                total_c = grp['credits'].sum()
+
+                if credits_val >= total_c * 0.75:
+                    decision = "✅ ADMIS"
+                elif credits_val >= total_c * 0.5:
+                    decision = "⚠️ ADMIS CONDITIONNELLEMENT"
+                elif credits_val > 0:
+                    decision = "🔄 RATTRAPAGE"
+                else:
+                    decision = "❌ AJOURNÉ"
+
+                return pd.Series({
+                    'Moyenne/20': round(moy, 2),
+                    'MGP/4': round(mgp, 2),
+                    'Crédits Validés': round(credits_val),
+                    'Total Crédits': round(total_c),
+                    'Décision': decision
+                })
+
+            delib = (
+                df_f.groupby(['matricule', 'nom', 'prenom', 'filiere', 'niveau'])
+                .apply(delib_etudiant)
+                .reset_index()
+                .sort_values('Moyenne/20', ascending=False)
+                .reset_index(drop=True)
+            )
+
+            # KPIs
+            total_etu = len(delib)
+            admis = len(delib[delib['Décision'].str.contains("ADMIS")])
+            rattrap = len(delib[delib['Décision'].str.contains("RATTRAPAGE")])
+            ajournes = len(delib[delib['Décision'].str.contains("AJOURNÉ")])
+
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("👨‍🎓 Total inscrits", total_etu)
+            k2.metric("✅ Admis", admis, f"{admis/total_etu*100:.1f}%" if total_etu else "0%")
+            k3.metric("🔄 Rattrapage", rattrap)
+            k4.metric("❌ Ajournés", ajournes)
+
+            st.markdown("---")
+            st.markdown("#### Tableau complet de délibération")
+
+            def color_decision(val):
+                if "ADMIS COND" in str(val): return 'color: #f59e0b; font-weight: bold'
+                if "ADMIS" in str(val): return 'color: #00d084; font-weight: bold'
+                if "RATTRAPAGE" in str(val): return 'color: #a855f7; font-weight: bold'
+                if "AJOURNÉ" in str(val): return 'color: #e94560; font-weight: bold'
+                return ''
+
+            st.dataframe(
+                delib.rename(columns={'matricule':'Matricule','nom':'Nom','prenom':'Prénom','filiere':'Filière','niveau':'Niveau'})
+                .style.map(color_decision, subset=['Décision']),
+                use_container_width=True, hide_index=True
+            )
+
+            csv_delib = delib.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Exporter les Délibérations (CSV)", csv_delib, "deliberations.csv", "text/csv", use_container_width=True)
 
     # ── TOUTES DONNÉES ────────────────────────────────────────────────────────
     elif page_edu == "🗃️ Voir toutes les données":
