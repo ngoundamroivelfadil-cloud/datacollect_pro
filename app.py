@@ -678,7 +678,7 @@ elif module == "📚 Éducation":
                                        color_discrete_sequence=['#e94560'],
                                        template='plotly_dark')
                     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                                      font_color="#1f1fdd")
+                                      font_color="#c8c8d8")
                     fig.add_vline(x=10, line_dash="dash", line_color="#00d084", annotation_text="Seuil 10/20")
                     st.plotly_chart(fig, use_container_width=True)
 
