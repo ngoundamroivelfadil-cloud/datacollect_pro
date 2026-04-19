@@ -717,7 +717,7 @@ if module == "🏠 Accueil":
     st.markdown("---")
     st.markdown("""
     <div class="info-box" style='text-align:center;'>
-        <div style='font-family:Syne; font-size:1rem; font-weight:700; color:#8888a8; margin-bottom:6px;'>
+        <div style='font-family:Syne; font-size:1rem; font-weight:700; color:white; margin-bottom:6px;'>
             🚀 Comment démarrer ?
         </div>
         <div style='color:#8888a8; font-size:0.88rem;'>
