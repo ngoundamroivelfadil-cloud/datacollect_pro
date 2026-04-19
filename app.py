@@ -1410,7 +1410,7 @@ elif module == "🛒 Commerce":
                     return f'color: {color}; font-weight: bold'
 
                 st.dataframe(
-                    inventory.style.applymap(color_stock, subset=['Stock Actuel']),
+                    inventory.style.map(color_stock, subset=['Stock Actuel']),
                     use_container_width=True
                 )
                 
