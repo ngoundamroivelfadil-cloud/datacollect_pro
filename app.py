@@ -893,17 +893,20 @@ elif module == "📚 Éducation":
         if df.empty:
             st.warning("⚠️ Aucune donnée disponible.")
         else:
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 filtre_filiere = st.selectbox("Filtrer par filière", ["Toutes"] + list(df['filiere'].unique()))
             with col2:
                 filtre_niveau = st.selectbox("Filtrer par niveau", ["Tous"] + list(df['niveau'].unique()))
             with col3:
+                filtre_semestre = st.selectbox("Filtrer par semestre", ["Tous"] + list(df['semestre'].unique()))
+            with col4:
                 filtre_mention = st.selectbox("Filtrer par mention", ["Toutes"] + list(df['mention'].unique()))
 
             df_filtered = df.copy()
             if filtre_filiere != "Toutes": df_filtered = df_filtered[df_filtered['filiere'] == filtre_filiere]
             if filtre_niveau != "Tous": df_filtered = df_filtered[df_filtered['niveau'] == filtre_niveau]
+            if filtre_semestre != "Tous": df_filtered = df_filtered[df_filtered['semestre'] == filtre_semestre]
             if filtre_mention != "Toutes": df_filtered = df_filtered[df_filtered['mention'] == filtre_mention]
 
             st.markdown(f"**{len(df_filtered)} enregistrement(s) trouvé(s)**")
@@ -1377,12 +1380,31 @@ elif module == "🛒 Commerce":
             with col2:
                 filtre_region = st.selectbox("Filtrer par région", ["Toutes"] + list(df['region'].unique()))
             with col3:
+                filtre_vendeur = st.selectbox("Filtrer par vendeur", ["Tous"] + list(df['vendeur'].unique()))
+
+            col4, col5 = st.columns([1, 2])
+            with col4:
                 filtre_mode = st.selectbox("Filtrer par paiement", ["Tous"] + list(df['mode_paiement'].unique()))
+            with col5:
+                # Filtrage par date si la colonne existe
+                if 'date_vente' in df.columns:
+                    df['date_vente_dt'] = pd.to_datetime(df['date_vente']).dt.date
+                    date_min, date_max = df['date_vente_dt'].min(), df['date_vente_dt'].max()
+                    filtre_dates = st.date_input("Filtrer par période", [date_min, date_max], min_value=date_min, max_value=date_max)
+                else:
+                    filtre_dates = None
 
             df_filtered = df.copy()
             if filtre_cat != "Toutes": df_filtered = df_filtered[df_filtered['categorie'] == filtre_cat]
             if filtre_region != "Toutes": df_filtered = df_filtered[df_filtered['region'] == filtre_region]
+            if filtre_vendeur != "Tous": df_filtered = df_filtered[df_filtered['vendeur'] == filtre_vendeur]
             if filtre_mode != "Tous": df_filtered = df_filtered[df_filtered['mode_paiement'] == filtre_mode]
+            
+            if filtre_dates and len(filtre_dates) == 2:
+                df_filtered['date_vente_dt'] = pd.to_datetime(df_filtered['date_vente']).dt.date
+                df_filtered = df_filtered[(df_filtered['date_vente_dt'] >= filtre_dates[0]) & 
+                                          (df_filtered['date_vente_dt'] <= filtre_dates[1])]
+                df_filtered = df_filtered.drop(columns=['date_vente_dt'])
 
             st.markdown(f"**{len(df_filtered)} enregistrement(s) — CA filtré : {df_filtered['montant_total'].sum():,.0f} FCFA**")
             st.dataframe(df_filtered.drop(columns=['date_saisie']), use_container_width=True)
