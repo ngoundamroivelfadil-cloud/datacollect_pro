@@ -22,16 +22,28 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-/* Root variables */
+/* Root variables - Dynamic Theme */
 :root {
     --edu-primary: #1a1a2e;
     --edu-accent: #e94560;
-    --edu-light: #16213e;
-    --com-primary: #0d3b2e;
     --com-accent: #00d084;
-    --com-light: #1a5c45;
-    --neutral: #f0f2f5;
+    --text-primary: #e8e8f0;
+    --text-secondary: #8888a8;
+    --bg-main: #0a0a0f;
+    --bg-sidebar: linear-gradient(180deg, #0d0d1a 0%, #0a1628 100%);
     --card-bg: rgba(255,255,255,0.05);
+    --card-border: rgba(255,255,255,0.1);
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --text-primary: #1a1a2e;
+        --text-secondary: #4a4a6a;
+        --bg-main: #f8f9fa;
+        --bg-sidebar: linear-gradient(180deg, #f0f2f6 0%, #e1e4e8 100%);
+        --card-bg: rgba(0,0,0,0.03);
+        --card-border: rgba(0,0,0,0.08);
+    }
 }
 
 /* Global */
@@ -39,111 +51,57 @@ html, body {
     font-family: 'DM Sans', sans-serif;
 }
 
-.main { background: #0a0a0f; color: #e8e8f0; }
-.stApp { background: #0a0a0f; }
+.main, .stApp { 
+    background-color: var(--bg-main) !important; 
+    color: var(--text-primary) !important; 
+}
 
 /* Sidebar */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0d0d1a 0%, #0a1628 100%);
-    border-right: 1px solid rgba(255,255,255,0.08);
+    background: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--card-border);
 }
 
-section[data-testid="stSidebar"] .stSelectbox label,
-section[data-testid="stSidebar"] .stRadio label,
+section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span {
-    color: #c8c8d8 !important;
+    color: var(--text-secondary) !important;
 }
 
 /* Headers */
-h1, h2, h3 { font-family: 'Syne', sans-serif; }
+h1, h2, h3 { font-family: 'Syne', sans-serif; color: var(--text-primary); }
 
 /* Cards */
 .metric-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 16px;
     padding: 24px;
     margin: 8px 0;
     backdrop-filter: blur(10px);
 }
 
-.edu-card { border-left: 4px solid #e94560; }
-.com-card { border-left: 4px solid #00d084; }
-
-.hero-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 2.8rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #e94560, #a855f7, #00d084);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.2;
-    margin-bottom: 8px;
+.metric-card * {
+    color: var(--text-primary);
 }
 
+.edu-card { border-left: 4px solid var(--edu-accent); }
+.com-card { border-left: 4px solid var(--com-accent); }
+
 .hero-sub {
-    color: #8888a8;
+    color: var(--text-secondary);
     font-size: 1.1rem;
     font-weight: 300;
     margin-bottom: 32px;
 }
 
-.section-badge {
-    display: inline-block;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-}
-
-.edu-badge { background: rgba(233,69,96,0.15); color: #e94560; border: 1px solid rgba(233,69,96,0.3); }
-.com-badge { background: rgba(0,208,132,0.15); color: #00d084; border: 1px solid rgba(0,208,132,0.3); }
-
-.stat-number {
-    font-family: 'Syne', sans-serif;
-    font-size: 2.2rem;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.stat-label {
-    font-size: 0.8rem;
-    color: #8888a8;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 4px;
-}
-
-.success-msg {
-    background: linear-gradient(135deg, rgba(0,208,132,0.15), rgba(0,208,132,0.05));
-    border: 1px solid rgba(0,208,132,0.3);
-    border-radius: 12px;
-    padding: 16px 20px;
-    color: #00d084;
-    font-weight: 500;
-    margin: 12px 0;
-}
-
 .info-box {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 20px;
-    margin: 12px 0;
-}
-
-/* Redefine specific info-box for consistency */
-.info-box {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 12px;
     padding: 15px;
     margin: 10px 0;
+    color: var(--text-secondary);
 }
 
 /* Buttons */
@@ -205,14 +163,14 @@ label { color: #c8c8d8 !important; }
 
 /* Metric */
 [data-testid="metric-container"] {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 12px;
     padding: 16px !important;
 }
 
-[data-testid="stMetricValue"] { color: #e8e8f0 !important; font-family: 'Syne', sans-serif !important; }
-[data-testid="stMetricLabel"] { color: #8888a8 !important; }
+[data-testid="stMetricValue"] { color: var(--text-primary) !important; font-family: 'Syne', sans-serif !important; }
+[data-testid="stMetricLabel"] { color: var(--text-secondary) !important; }
 [data-testid="stMetricDelta"] svg { fill: currentColor !important; }
 
 /* Responsive adjustments */
@@ -404,10 +362,10 @@ if module == "🏠 Accueil":
         st.markdown('<span class="section-badge edu-badge">📚 Module Éducation</span>', unsafe_allow_html=True)
         st.markdown("""
         <div class="metric-card edu-card">
-            <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:#e8e8f0; margin-bottom:12px;'>
+            <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:var(--text-primary); margin-bottom:12px;'>
                 Gestion des résultats académiques
             </div>
-            <div style='color:#8888a8; font-size:0.9rem; line-height:1.7;'>
+            <div style='color:var(--text-secondary); font-size:0.9rem; line-height:1.7;'>
                 ✦ Saisie des notes par matière<br>
                 ✦ Calcul automatique des moyennes<br>
                 ✦ Attribution des mentions<br>
@@ -422,10 +380,10 @@ if module == "🏠 Accueil":
         st.markdown('<span class="section-badge com-badge">🛒 Module Commerce</span>', unsafe_allow_html=True)
         st.markdown("""
         <div class="metric-card com-card">
-            <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:#e8e8f0; margin-bottom:12px;'>
+            <div style='font-family:Syne; font-size:1.1rem; font-weight:700; color:var(--text-primary); margin-bottom:12px;'>
                 Suivi des performances commerciales
             </div>
-            <div style='color:#8888a8; font-size:0.9rem; line-height:1.7;'>
+            <div style='color:var(--text-secondary); font-size:0.9rem; line-height:1.7;'>
                 ✦ Enregistrement des ventes<br>
                 ✦ Calcul du chiffre d'affaires<br>
                 ✦ Analyse par produit & catégorie<br>
@@ -467,10 +425,10 @@ if module == "🏠 Accueil":
     st.markdown("---")
     st.markdown("""
     <div class="info-box" style='text-align:center;'>
-        <div style='font-family:Syne; font-size:1rem; font-weight:700; color:#c8c8d8; margin-bottom:6px;'>
+        <div style='font-family:Syne; font-size:1rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px;'>
             🚀 Comment démarrer ?
         </div>
-        <div style='color:#8888a8; font-size:0.88rem;'>
+        <div style='color:var(--text-secondary); font-size:0.88rem;'>
             Sélectionnez un module dans le menu de gauche → Saisissez ou importez vos données → Consultez les analyses
         </div>
     </div>
@@ -941,11 +899,11 @@ elif module == "📚 Éducation":
                 
                 st.markdown(f'''
                 <div class="metric-card edu-card">
-                    <div style="font-size:0.9rem; color:#8888a8;">Note d'Examen estimée :</div>
+                    <div style="font-size:0.9rem; color:var(--text-secondary);">Note d'Examen estimée :</div>
                     <div style="font-size:2rem; font-weight:800; color:#e94560;">{pred_examen:.2f} / 20</div>
                     <hr>
-                    <div style="font-size:0.9rem; color:#8888a8;">Note Finale estimée :</div>
-                    <div style="font-size:1.5rem; font-weight:700; color:#e8e8f0;">{pred_finale:.2f} / 20</div>
+                    <div style="font-size:0.9rem; color:var(--text-secondary);">Note Finale estimée :</div>
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--text-primary);">{pred_finale:.2f} / 20</div>
                 </div>
                 ''', unsafe_allow_html=True)
                 
@@ -1436,7 +1394,7 @@ elif module == "🛒 Commerce":
                 
                 st.markdown(f'''
                 <div class="metric-card com-card">
-                    <div style="font-size:0.9rem; color:#8888a8;">Chiffre d'Affaires estimé :</div>
+                    <div style="font-size:0.9rem; color:var(--text-secondary);">Chiffre d'Affaires estimé :</div>
                     <div style="font-size:2rem; font-weight:800; color:#00d084;">{pred_ca:,.0f} FCFA</div>
                 </div>
                 ''', unsafe_allow_html=True)
