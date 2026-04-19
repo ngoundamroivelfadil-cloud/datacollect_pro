@@ -255,7 +255,7 @@ def get_conn(): return sqlite3.connect(DB_PATH)
 
 def get_etudiants():
     conn = get_conn()
-    df = pd.read_sql("SELECT * FROM etudiants ORDER BY date_e DESC", conn)
+    df = pd.read_sql("SELECT * FROM etudiants ORDER BY date_saisie DESC", conn)
     conn.close()
     return df
 
@@ -427,7 +427,7 @@ if module == "🏠 Accueil":
             recent_v = df_com.groupby('date_saisie').agg({
                 'vendeur': 'first',
                 'montant_total': 'sum'
-            }).reset_index().sort_values('date_e', ascending=False).head(5)
+            }).reset_index().sort_values('date_saisie', ascending=False).head(5)
             
             recent_v.columns = ['Date/Heure Saisie', 'Agent Vendeur', 'Montant Total (FCFA)']
             st.dataframe(recent_v, use_container_width=True, hide_index=True)
