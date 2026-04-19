@@ -497,6 +497,15 @@ def init_db():
             motif TEXT, date_ajustement TEXT, date_saisie TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            horodatage TEXT,
+            module TEXT,
+            action TEXT,
+            details TEXT
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -525,6 +534,22 @@ def get_ajustements():
     df = pd.read_sql("SELECT * FROM ajustements ORDER BY date_saisie DESC", conn)
     conn.close()
     return df
+
+def get_audit_logs():
+    conn = get_conn()
+    df = pd.read_sql("SELECT * FROM audit_logs ORDER BY id DESC", conn)
+    conn.close()
+    return df
+
+def log_action(module: str, action: str, details: str):
+    """Enregistre une action sensible dans le journal d'audit."""
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO audit_logs (horodatage, module, action, details) VALUES (?,?,?,?)",
+        (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), module, action, details)
+    )
+    conn.commit()
+    conn.close()
 
 def get_lmd_info(note_20):
     n = note_20 * 5
@@ -1217,22 +1242,70 @@ elif module == "📚 Éducation":
                 etu_list = df['id'].astype(str) + " - " + df['prenom'] + " " + df['nom'] + " (" + df['matricule'] + ")"
                 to_delete = st.selectbox("Sélectionnez l'étudiant à supprimer", df['id'].tolist(), format_func=lambda x: etu_list[df['id'] == x].values[0])
                 if st.button("🗑️ Supprimer la sélection", key="btn_del_etu"):
+                    row_e = df[df['id'] == to_delete].iloc[0]
+                    details_e = f"Matricule: {row_e['matricule']} | {row_e['prenom']} {row_e['nom']} | {row_e['filiere']} - {row_e['niveau']}"
                     conn = get_conn()
                     conn.execute("DELETE FROM etudiants WHERE id=?", (to_delete,))
                     conn.commit()
                     conn.close()
+                    log_action("Éducation", "SUPPRESSION ÉTUDIANT", f"ID#{to_delete} - {details_e}")
                     st.success("Étudiant supprimé avec succès !")
                     st.rerun()
                     
         with col2:
             st.markdown("#### Zone de Danger")
             if st.button("🚨 Vider TOUTE la base Éducation", help="Action irréversible !"):
+                df_before_edu = get_etudiants()
                 conn = get_conn()
                 conn.execute("DELETE FROM etudiants")
                 conn.commit()
                 conn.close()
+                log_action("Éducation", "VIDAGE BASE ÉTUDIANTS", f"{len(df_before_edu)} enregistrement(s) supprimé(s) en une fois.")
                 st.success("La base de données Éducation a été entièrement vidée.")
                 st.rerun()
+
+        # ── JOURNAL D'AUDIT (ÉDUCATION) ───────────────────────────────────────
+        st.markdown("---")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, rgba(233,69,96,0.12), rgba(168,85,247,0.08));
+                    border: 1px solid rgba(233,69,96,0.3); border-radius: 14px; padding: 20px; margin-bottom: 16px;'>
+            <div style='font-family:Syne; font-size:1.15rem; font-weight:800; color:#e94560; margin-bottom:4px;'>
+                🔍 Journal d'Audit — Traçabilité des Actions
+            </div>
+            <div style='color:#8888a8; font-size:0.88rem;'>
+                Toutes les suppressions effectuées dans le module Éducation sont enregistrées ici. Aucune action ne peut être cachée.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        df_audit_edu = get_audit_logs()
+        # Filtrer uniquement les actions Education
+        df_audit_edu = df_audit_edu[df_audit_edu['module'] == 'Éducation']
+        
+        if df_audit_edu.empty:
+            st.info("Éducation : Aucune action enregistrée dans le journal pour le moment.")
+        else:
+            def color_action_edu(val):
+                if "SUPPRESSION" in val or "VIDAGE" in val:
+                    return 'color: #e94560; font-weight: bold'
+                return 'color: #00d084;'
+
+            st.markdown(f"⚠️ **{len(df_audit_edu)} action(s)** enregistrée(s) pour ce module.")
+            st.dataframe(
+                df_audit_edu[['horodatage', 'action', 'details']]
+                .rename(columns={'horodatage': 'Date & Heure', 'action': 'Action', 'details': 'Détails'})
+                .style.map(color_action_edu, subset=['Action']),
+                use_container_width=True,
+                hide_index=True
+            )
+            csv_edu = df_audit_edu.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Exporter le Journal Éducation (CSV)",
+                data=csv_edu,
+                file_name=f"audit_education_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1308,6 +1381,10 @@ elif module == "🛒 Commerce":
                     conn.close()
                     
                     if articles_count > 0:
+                        log_action(
+                            "Commerce", "NOUVELLE VENTE",
+                            f"Vendeur: {vendeur} | Région: {region} | {articles_count} article(s) | Total: {total_facture:,.0f} FCFA | Paiement: {mode_paiement} | Date: {date_vente}"
+                        )
                         st.markdown(f"""
                         <div class="success-msg" style="border-left: 5px solid #00d084;">
                             🎉 <strong>Vente réussie !</strong><br>
@@ -1395,6 +1472,10 @@ elif module == "🛒 Commerce":
                         conn.commit()
                         conn.close()
                         if count_a > 0:
+                            log_action(
+                                "Commerce", "NOUVEL ACHAT STOCK",
+                                f"Fournisseur: {fournisseur} | {count_a} produit(s) | Dépense totale: {total_depense:,.0f} FCFA | Date achat: {date_achat}"
+                            )
                             st.markdown(f'<div class="success-msg">✅ {count_a} produits ajoutés au stock ! Dépense totale : {total_depense:,.0f} FCFA</div>', unsafe_allow_html=True)
                         else:
                             st.warning("Aucun produit valide saisi.")
@@ -1761,10 +1842,13 @@ elif module == "🛒 Commerce":
                 vente_list = df['id'].astype(str) + " - " + df['produit'] + " (" + df['montant_total'].astype(str) + " FCFA)"
                 to_delete = st.selectbox("Sélectionnez la vente à supprimer", df['id'].tolist(), format_func=lambda x: vente_list[df['id'] == x].values[0])
                 if st.button("🗑️ Supprimer la sélection", key="btn_del_vente"):
+                    row_v = df[df['id'] == to_delete].iloc[0]
+                    details_v = f"Produit: {row_v['produit']} | Qté: {row_v['quantite']} | Montant: {row_v['montant_total']} FCFA | Vendeur: {row_v['vendeur']} | Date: {row_v['date_vente']}"
                     conn = get_conn()
                     conn.execute("DELETE FROM ventes WHERE id=?", (to_delete,))
                     conn.commit()
                     conn.close()
+                    log_action("Commerce", "SUPPRESSION VENTE", f"ID#{to_delete} - {details_v}")
                     st.success("Vente supprimée avec succès !")
                     st.rerun()
                     
@@ -1772,9 +1856,11 @@ elif module == "🛒 Commerce":
             st.markdown("#### Zone de Danger")
             if st.button("🚨 Vider TOUTE la base Commerce", help="Action irréversible !"):
                 conn = get_conn()
+                df_before = get_ventes()
                 conn.execute("DELETE FROM ventes")
                 conn.commit()
                 conn.close()
+                log_action("Commerce", "VIDAGE BASE VENTES", f"{len(df_before)} enregistrements supprimés en une fois.")
                 st.success("La base de données Commerce a été entièrement vidée.")
                 st.rerun()
                     
@@ -1789,10 +1875,13 @@ elif module == "🛒 Commerce":
                 ach_list = df_a['id'].astype(str) + " - " + df_a['produit'] + " (" + df_a['quantite'].astype(str) + " unités)"
                 to_del_ach = st.selectbox("Sélectionnez l'achat à supprimer", df_a['id'].tolist(), format_func=lambda x: ach_list[df_a['id'] == x].values[0])
                 if st.button("🗑️ Supprimer cet achat", key="btn_del_ach"):
+                    row_a = df_a[df_a['id'] == to_del_ach].iloc[0]
+                    details_a = f"Produit: {row_a['produit']} | Qté: {row_a['quantite']} | Fournisseur: {row_a['fournisseur']}"
                     conn = get_conn()
                     conn.execute("DELETE FROM achats WHERE id=?", (to_del_ach,))
                     conn.commit()
                     conn.close()
+                    log_action("Commerce", "SUPPRESSION ACHAT", f"ID#{to_del_ach} - {details_a}")
                     st.success("Entrée de stock supprimée !")
                     st.rerun()
         
@@ -1816,6 +1905,8 @@ elif module == "🛒 Commerce":
                     new_fourn = st.text_input("Fournisseur", value=row['fournisseur'])
                     
                     if st.form_submit_button("✅ Enregistrer les modifications"):
+                        old_qty = int(row['quantite'])
+                        old_prod = row['produit']
                         conn = get_conn()
                         conn.execute("""
                             UPDATE achats SET produit=?, quantite=?, prix_achat=?, fournisseur=?
@@ -1823,6 +1914,10 @@ elif module == "🛒 Commerce":
                         """, (new_prod, new_qty, new_pu, new_fourn, ach_to_edit))
                         conn.commit()
                         conn.close()
+                        log_action(
+                            "Commerce", "MODIFICATION ACHAT",
+                            f"ID#{ach_to_edit} | Produit: '{old_prod}' → '{new_prod}' | Qté: {old_qty} → {new_qty} | Prix: {row['prix_achat']} → {new_pu} | Fourn: {row['fournisseur']} → {new_fourn}"
+                        )
                         st.success("Achat mis à jour avec succès !")
                         st.rerun()
             else:
@@ -1851,6 +1946,11 @@ elif module == "🛒 Commerce":
                         """, (prod_reg, qty_reg, motif_reg, str(date_reg), datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
                         conn.commit()
                         conn.close()
+                        signe = "+" if qty_reg > 0 else ""
+                        log_action(
+                            "Commerce", "AJUSTEMENT STOCK",
+                            f"Produit: '{prod_reg}' | Quantité ajustée: {signe}{qty_reg} | Motif: {motif_reg} | Date constat: {date_reg}"
+                        )
                         st.success(f"Stock ajusté de {qty_reg} pour '{prod_reg}' !")
                         st.rerun()
                     else:
@@ -1867,6 +1967,75 @@ elif module == "🛒 Commerce":
                  conn.execute("DELETE FROM ajustements")
                  conn.commit()
                  conn.close()
+                 log_action("Commerce", "VIDAGE AJUSTEMENTS", "Tout l'historique des ajustements manuels a été effacé.")
                  st.rerun()
         else:
             st.info("Aucun ajustement manuel enregistré.")
+
+        # ── JOURNAL D'AUDIT ────────────────────────────────────────────────────
+        st.markdown("---")
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, rgba(233,69,96,0.12), rgba(168,85,247,0.08));
+                    border: 1px solid rgba(233,69,96,0.3); border-radius: 14px; padding: 20px; margin-bottom: 16px;'>
+            <div style='font-family:Syne; font-size:1.15rem; font-weight:800; color:#e94560; margin-bottom:4px;'>
+                🔍 Journal d'Audit — Traçabilité des Actions
+            </div>
+            <div style='color:#8888a8; font-size:0.88rem;'>
+                Toutes les modifications, suppressions et ajustements effectués sont enregistrés ici automatiquement.
+                Aucune action sensible ne peut être cachée.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        df_audit = get_audit_logs()
+        if df_audit.empty:
+            st.info("Aucune action enregistrée dans le journal pour le moment.")
+        else:
+            # Filtres rapides
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                filtre_action = st.selectbox(
+                    "Filtrer par type d'action",
+                    ["Toutes"] + sorted(df_audit['action'].unique().tolist())
+                )
+            with col_f2:
+                filtre_module = st.selectbox(
+                    "Filtrer par module",
+                    ["Tous"] + sorted(df_audit['module'].unique().tolist())
+                )
+            
+            df_audit_f = df_audit.copy()
+            if filtre_action != "Toutes":
+                df_audit_f = df_audit_f[df_audit_f['action'] == filtre_action]
+            if filtre_module != "Tous":
+                df_audit_f = df_audit_f[df_audit_f['module'] == filtre_module]
+            
+            st.markdown(f"⚠️ **{len(df_audit_f)} action(s) enregistrée(s)** dans le journal (filtré).")
+            
+            # Affichage avec badge couleur
+            def color_action(val):
+                if "SUPPRESSION" in val or "VIDAGE" in val:
+                    return 'color: #e94560; font-weight: bold'
+                elif "MODIFICATION" in val:
+                    return 'color: #f59e0b; font-weight: bold'
+                elif "AJUSTEMENT" in val:
+                    return 'color: #a855f7; font-weight: bold'
+                return 'color: #00d084;'
+            
+            st.dataframe(
+                df_audit_f[['horodatage', 'module', 'action', 'details']]
+                .rename(columns={'horodatage': 'Date & Heure', 'module': 'Module', 'action': 'Action', 'details': 'Détails'})
+                .style.map(color_action, subset=['Action']),
+                use_container_width=True,
+                hide_index=True
+            )
+            
+            # Export CSV
+            csv_audit = df_audit_f.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Exporter le Journal (CSV)",
+                data=csv_audit,
+                file_name=f"audit_log_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
