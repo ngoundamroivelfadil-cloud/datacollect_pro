@@ -383,9 +383,13 @@ if module == "🏠 Accueil":
     df_com = get_ventes()
 
     with col1:
-        st.metric("👨‍🎓 Étudiants enregistrés", len(df_edu))
+        # On compte les matricules uniques, pas les lignes de matières
+        nb_etudiants = df_edu['matricule'].nunique() if not df_edu.empty else 0
+        st.metric("👨‍🎓 Étudiants inscrits", nb_etudiants)
     with col2:
-        st.metric("📦 Ventes enregistrées", len(df_com))
+        # On compte les sessions de vente (bons de caisse déposés au même moment)
+        nb_ventes = df_com['date_saisie'].nunique() if not df_com.empty else 0
+        st.metric("🧾 Factures générées", nb_ventes)
     with col3:
         moy = round(df_edu['note_finale'].mean(), 2) if len(df_edu) > 0 else 0
         st.metric("📈 Moyenne générale", f"{moy}/20")
@@ -431,6 +435,34 @@ if module == "🏠 Accueil":
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 🕒 Derniers Enregistrements")
+    
+    col_e, col_v = st.columns(2)
+    
+    with col_e:
+        st.markdown("**📜 Récemment inscrits (Étudiants)**")
+        if not df_edu.empty:
+            # On prend le dernier enregistrement par matricule (pour lister les personnes)
+            recent_edu = df_edu.sort_values('date_saisie', ascending=False).drop_duplicates('matricule').head(5)
+            st.dataframe(recent_edu[['matricule', 'nom', 'filiere', 'niveau']], use_container_width=True, hide_index=True)
+        else:
+            st.info("Aucun étudiant enregistré.")
+
+    with col_v:
+        st.markdown("**💸 Dernières Ventes (Bons de caisse)**")
+        if not df_com.empty:
+            # On groupe par session de saisie pour montrer les transactions
+            recent_v = df_com.groupby('date_saisie').agg({
+                'vendeur': 'first',
+                'montant_total': 'sum'
+            }).reset_index().sort_values('date_saisie', ascending=False).head(5)
+            
+            recent_v.columns = ['Date/Heure Saisie', 'Agent Vendeur', 'Montant Total (FCFA)']
+            st.dataframe(recent_v, use_container_width=True, hide_index=True)
+        else:
+            st.info("Aucune vente enregistrée.")
 
     st.markdown("---")
     st.markdown("""
