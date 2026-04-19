@@ -334,7 +334,7 @@ with st.sidebar:
         </div>
         <div style='color:#555570; font-size:0.75rem; letter-spacing:2px; 
                     text-transform:uppercase; margin-top:4px;'>
-            INF 232 · EC2
+            ROI-V ABDEL
         </div>
     </div>
     """, unsafe_allow_html=True)
