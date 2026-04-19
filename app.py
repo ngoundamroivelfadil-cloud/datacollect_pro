@@ -137,42 +137,33 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; }
     margin: 12px 0;
 }
 
-.form-section {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 20px;
-}
-
-/* Inputs - Scoped and fixed for st.data_editor popovers */
-div:not(.stDataFrame) > div > div > .stTextInput input, 
-div:not(.stDataFrame) > div > div > .stNumberInput input, 
-div:not(.stDataFrame) > div > div > .stSelectbox select, 
-div:not(.stDataFrame) > div > div > .stDateInput input {
+/* Scoped Inputs - Main Area */
+div[data-testid="stForm"] [data-testid="stTextInput"] input, 
+div[data-testid="stForm"] [data-testid="stNumberInput"] input, 
+div[data-testid="stForm"] [data-testid="stSelectbox"] div[data-baseweb="select"] {
     background: #f0f2f6 !important;
     border: 1px solid #888888 !important;
     border-radius: 10px !important;
     color: #000000 !important;
-    caret-color: #000000 !important;
-    box-sizing: border-box !important;
-    max-width: 100% !important;
 }
 
-/* Prevent st.data_editor internal inputs from inheriting global styles which cause offsets */
-.stDataFrame input, .stDataFrame select {
-    all: revert !important;
-    box-sizing: border-box !important;
+/* Sidebar specific inputs - Dark Mode Integration */
+section[data-testid="stSidebar"] [data-testid="stTextInput"] input,
+section[data-testid="stSidebar"] [data-testid="stNumberInput"] input,
+section[data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] {
+    background: rgba(255,255,255,0.05) !important;
+    color: #c8c8d8 !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 8px !important;
 }
 
-.stTextInput input::placeholder, .stNumberInput input::placeholder {
-    color: #555555 !important;
-    opacity: 1 !important;
-}
-
-.stTextInput input:focus, .stNumberInput input:focus {
-    border-color: rgba(233,69,96,0.5) !important;
-    box-shadow: 0 0 0 2px rgba(233,69,96,0.1) !important;
+/* Redefine specific info-box for consistency */
+.info-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
 }
 
 /* Buttons */
@@ -485,47 +476,45 @@ elif module == "📚 Éducation":
         st.markdown("### Saisie des résultats académiques")
 
         with st.form("form_etudiant", clear_on_submit=True):
-            st.markdown('<div class="form-section">', unsafe_allow_html=True)
-            st.markdown("#### 1. Informations de l'Étudiant")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                nom = st.text_input("Nom ", key="nom")
-                filiere = st.selectbox("Filière ", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
-            with col2:
-                prenom = st.text_input("Prénom ", key="prenom")
-                niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
-            with col3:
-                matricule = st.text_input("Matricule", key="matricule")
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown("#### 1. Informations de l'Étudiant")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    nom = st.text_input("Nom ", key="nom")
+                    filiere = st.selectbox("Filière ", ["Informatique", "Mathématiques", "Physique", "Chimie", "Biologie", "Économie", "Droit", "Médecine", "Autre"])
+                with col2:
+                    prenom = st.text_input("Prénom ", key="prenom")
+                    niveau = st.selectbox("Niveau ", ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"])
+                with col3:
+                    matricule = st.text_input("Matricule", key="matricule")
 
-            st.markdown('<div class="form-section">', unsafe_allow_html=True)
-            st.markdown("#### 2. Notes du Semestre (Saisie Multiple)")
-            st.markdown("Remplissez la grille ci-dessous. Vous pouvez ajouter autant de matières que nécessaire en bas de la grille.")
-            
-            # Grille par défaut
-            default_grid = pd.DataFrame(
-                [
-                    {"Matière": "INF232", "Semestre": "S1", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
-                    {"Matière": "INF212", "Semestre": "S1", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
-                    {"Matière": "MAT232", "Semestre": "S2", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": None, "Note EE (/50)": 0.0}, # Math n'a pas de TP !
-                ]
-            )
-            
-            edited_df = st.data_editor(
-                default_grid, 
-                num_rows="dynamic", 
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Matière": st.column_config.TextColumn("Unité d'enseignement", required=True),
-                    "Semestre": st.column_config.SelectboxColumn("Semestre", options=["S1", "S2", "S3", "S4", "S5", "S6"], required=True),
-                    "Crédits": st.column_config.NumberColumn("Crédits", min_value=1.0, max_value=30.0, step=1.0, required=True),
-                    "Note CC (/20)": st.column_config.NumberColumn("Note CC (/20)", min_value=0.0, max_value=20.0, step=0.25),
-                    "Note TP (/30)": st.column_config.NumberColumn("Note TP (/30)", min_value=0.0, max_value=30.0, step=0.25),
-                    "Note EE (/50)": st.column_config.NumberColumn("Note EE (/50)", min_value=0.0, max_value=50.0, step=0.25)
-                }
-            )
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown("#### 2. Notes du Semestre (Saisie Multiple)")
+                st.markdown("Remplissez la grille ci-dessous. Vous pouvez ajouter autant de matières que nécessaire.")
+                
+                # Grille par défaut
+                default_grid = pd.DataFrame(
+                    [
+                        {"Matière": "INF232", "Semestre": "S1", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                        {"Matière": "INF212", "Semestre": "S1", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": 0.0, "Note EE (/50)": 0.0},
+                        {"Matière": "MAT232", "Semestre": "S2", "Crédits": 6.0, "Note CC (/20)": 0.0, "Note TP (/30)": None, "Note EE (/50)": 0.0},
+                    ]
+                )
+                
+                edited_df = st.data_editor(
+                    default_grid, 
+                    num_rows="dynamic", 
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Matière": st.column_config.TextColumn("Unité d'enseignement", required=True),
+                        "Semestre": st.column_config.SelectboxColumn("Semestre", options=["S1", "S2"], required=True),
+                        "Crédits": st.column_config.NumberColumn("Crédits", min_value=1.0, max_value=30.0, step=1.0, required=True),
+                        "Note CC (/20)": st.column_config.NumberColumn("Note CC (/20)", min_value=0.0, max_value=20.0, step=0.25),
+                        "Note TP (/30)": st.column_config.NumberColumn("Note TP (/30)", min_value=0.0, max_value=30.0, step=0.25),
+                        "Note EE (/50)": st.column_config.NumberColumn("Note EE (/50)", min_value=0.0, max_value=50.0, step=0.25)
+                    }
+                )
 
             submitted = st.form_submit_button("💾 Enregistrer le Semestre", use_container_width=True)
 
@@ -1001,43 +990,39 @@ elif module == "🛒 Commerce":
         st.markdown("### Saisie des données de ventes")
 
         with st.form("form_vente", clear_on_submit=True):
-            st.markdown('<div class="form-section">', unsafe_allow_html=True)
-            st.markdown("#### 🛒 Détails de la Transaction")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                vendeur = st.text_input("Vendeur / Agent", 
-                                        help="Nom de la personne qui effectue la vente (Caissier, Commercial ou Gérant).", 
-                                        placeholder="Ex: Paul, Marie, Agent_01",
-                                        key="vendeur_com")
-                region = st.selectbox("Région de vente", 
-                                      ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"],
-                                      help="Zone géographique où l'échange a eu lieu.")
-            with col2:
-                mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Orange Money" ,"Carte bancaire", "Crypto"])
-                date_vente = st.date_input("Date de vente", value=date.today())
-            with col3:
-                st.info("💡 Saisissez les produits ci-dessous pour générer la facture.")
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown("#### 🛒 Détails de la Transaction")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    vendeur = st.text_input("Vendeur / Agent", 
+                                            help="Qui fait la vente (Caissier, Gérant).", 
+                                            placeholder="Ex: Paul, Marie",
+                                            key="vendeur_com")
+                with col2:
+                    region = st.selectbox("Région de vente", 
+                                          ["Centre", "Littoral", "Ouest", "Nord", "Adamaoua", "Est", "Sud", "Sud-Ouest", "Nord-Ouest", "Extrême-Nord", "Autre"])
+                with col3:
+                    mode_paiement = st.selectbox("Mode de paiement", ["Espèces", "Mobile Money", "Orange Money" ,"Carte bancaire"])
+                    date_vente = st.date_input("Date de vente", value=date.today())
 
-            st.markdown('<div class="form-section">', unsafe_allow_html=True)
-            st.markdown("#### 📦 Articles du Panier")
-            
-            # Grille de produits par défaut
-            default_sales = pd.DataFrame([{"Produit": "", "Catégorie": "Électronique", "Quantité": 1, "Prix unitaire (FCFA)": 0.0}])
+            with st.container(border=True):
+                st.markdown("#### 📦 Articles du Panier")
+                
+                # Grille de produits par défaut
+                default_sales = pd.DataFrame([{"Produit": "", "Catégorie": "Alimentaire", "Quantité": 1, "Prix unitaire (FCFA)": 0.0}])
 
-            edited_sales = st.data_editor(
-                default_sales,
-                num_rows="dynamic",
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Produit": st.column_config.TextColumn("Désignation Produit", required=True),
-                    "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"]),
-                    "Quantité": st.column_config.NumberColumn("Qté", min_value=1, step=1, required=True),
-                    "Prix unitaire (FCFA)": st.column_config.NumberColumn("Prix Unitaire", min_value=0.0, step=25.0, required=True)
-                }
-            )
-            st.markdown('</div>', unsafe_allow_html=True)
+                edited_sales = st.data_editor(
+                    default_sales,
+                    num_rows="dynamic",
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Produit": st.column_config.TextColumn("Désignation Produit", required=True),
+                        "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Autre"]),
+                        "Quantité": st.column_config.NumberColumn("Qté", min_value=1, step=1, required=True),
+                        "Prix unitaire (FCFA)": st.column_config.NumberColumn("Prix Unitaire", min_value=0.0, step=25.0, required=True)
+                    }
+                )
 
             submitted = st.form_submit_button("💳 Enregistrer la Facture / Vente", use_container_width=True)
 
@@ -1092,34 +1077,33 @@ elif module == "🛒 Commerce":
         tab1, tab2 = st.tabs(["🛒 Nouvel Achat (Stock +)", "📊 État des Stocks"])
         
         with tab1:
-            st.markdown("#### Enregistrer un arrivage de marchandise")
-            with st.form("form_achat", clear_on_submit=True):
-                col1, col2 = st.columns(2)
-                with col1:
-                    fournisseur = st.text_input("Fournisseur", placeholder="Ex: Grossiste ABC, Marché Central...")
-                    date_achat = st.date_input("Date d'achat", value=date.today())
-                with col2:
-                    st.info("💡 Utilisez la grille ci-dessous pour lister vos achats.")
+            with st.container(border=True):
+                st.markdown("#### Enregistrer un arrivage de marchandise")
+                with st.form("form_achat", clear_on_submit=True):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        fournisseur = st.text_input("Fournisseur", placeholder="Ex: Grossiste ABC...")
+                        date_achat = st.date_input("Date d'achat", value=date.today())
+                    with col2:
+                        st.info("💡 Saisissez vos achats dans la grille ci-dessous.")
 
-                # Grille d'achats
-                df_default_achats = pd.DataFrame([
-                    {"Produit": "", "Catégorie": "Alimentaire", "Quantité": 10, "Prix d'Achat (Unitaire)": 0.0}
-                ])
-                
-                edited_achats = st.data_editor(
-                    df_default_achats,
-                    num_rows="dynamic",
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Produit": st.column_config.TextColumn("Désignation Produit", required=True),
-                        "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Cosmétiques", "Agriculture", "Santé", "Services", "Autre"]),
-                        "Quantité": st.column_config.NumberColumn("Qté achetée", min_value=1, step=1),
-                        "Prix d'Achat (Unitaire)": st.column_config.NumberColumn("Prix d'Achat (Cout)", min_value=0.0, step=50.0)
-                    }
-                )
-                
-                btn_achat = st.form_submit_button("📥 Valider l'entrée en Stock", use_container_width=True)
+                    # Grille d'achats
+                    df_default_achats = pd.DataFrame([{"Produit": "", "Catégorie": "Alimentaire", "Quantité": 10, "Prix d'Achat (Unitaire)": 0.0}])
+                    
+                    edited_achats = st.data_editor(
+                        df_default_achats,
+                        num_rows="dynamic",
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Produit": st.column_config.TextColumn("Désignation Produit", required=True),
+                            "Catégorie": st.column_config.SelectboxColumn("Catégorie", options=["Électronique", "Alimentaire", "Vêtements", "Mobilier", "Fournitures", "Autre"]),
+                            "Quantité": st.column_config.NumberColumn("Qté achetée", min_value=1, step=1),
+                            "Prix d'Achat (Unitaire)": st.column_config.NumberColumn("Prix d'Achat (Cout)", min_value=0.0, step=50.0)
+                        }
+                    )
+                    
+                    btn_achat = st.form_submit_button("📥 Valider l'entrée en Stock", use_container_width=True)
                 
                 if btn_achat:
                     if fournisseur:
