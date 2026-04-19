@@ -8,6 +8,248 @@ import sqlite3
 import os
 from datetime import datetime, date
 import io
+from fpdf import FPDF
+
+# ─── PDF GENERATION UTILS ─────────────────────────────────────────────────────
+class DataCollectPDF(FPDF):
+    def header(self):
+        # Draw a subtle background border/frame
+        self.set_draw_color(200, 200, 200)
+        self.set_line_width(0.1)
+        self.rect(5, 5, 200, 287)
+        
+        if os.path.exists("logo.svg"):
+             # fpdf2 supports svg naturally if installed with dependencies
+             try:
+                 self.image("logo.svg", 10, 8, 25)
+             except:
+                 pass
+        
+        self.set_font('helvetica', 'B', 22)
+        self.set_text_color(26, 26, 46) # Deep blue
+        self.set_x(40)
+        self.cell(0, 10, 'DATA-COLLECT PRO', ln=True, align='L')
+        
+        self.set_font('helvetica', 'I', 9)
+        self.set_text_color(100, 100, 100)
+        self.set_x(40)
+        self.cell(0, 5, 'L\'Intelligence de Données au service de la Performance', ln=True, align='L')
+        
+        self.ln(12)
+        self.set_draw_color(233, 69, 96) # Accent color
+        self.set_line_width(0.8)
+        self.line(10, 35, 200, 35)
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-20)
+        self.set_font('helvetica', 'I', 8)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 5, 'Ce document est une production officielle de la plateforme DataCollect Pro.', ln=True, align='C')
+        self.cell(0, 5, f'Page {self.page_no()}/{{nb}} - Généré le {datetime.now().strftime("%d/%m/%Y à %H:%M")}', align='C')
+
+def generate_bulletin_pdf(df_etu_pdf, etu_info):
+    pdf = DataCollectPDF()
+    pdf.alias_nb_pages()
+    pdf.add_page()
+    
+    # Titre du document
+    pdf.set_font('helvetica', 'B', 18)
+    pdf.set_text_color(233, 69, 96)
+    pdf.cell(0, 15, f"RELEVÉ DE NOTES OFFICIEL", ln=True, align='C')
+    pdf.set_font('helvetica', 'B', 12)
+    pdf.set_text_color(50, 50, 50)
+    pdf.cell(0, 8, f"SESSION : {etu_info['semestre'].upper()}", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Infos Etudiant dans un cadre
+    pdf.set_fill_color(245, 245, 250)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.rect(10, 65, 190, 40, 'F')
+    
+    pdf.set_xy(15, 70)
+    pdf.set_font('helvetica', 'B', 11)
+    pdf.cell(40, 8, "NOM & PRÉNOM :", 0)
+    pdf.set_font('helvetica', '', 11)
+    pdf.cell(0, 8, f"{etu_info['prenom'].upper()} {etu_info['nom'].upper()}", ln=1)
+    
+    pdf.set_x(15)
+    pdf.set_font('helvetica', 'B', 11)
+    pdf.cell(40, 8, "MATRICULE :", 0)
+    pdf.set_font('helvetica', '', 11)
+    pdf.cell(0, 8, f"{etu_info['matricule']}", ln=1)
+    
+    pdf.set_x(15)
+    pdf.set_font('helvetica', 'B', 11)
+    pdf.cell(40, 8, "FILIÈRE / NIVEAU :", 0)
+    pdf.set_font('helvetica', '', 11)
+    pdf.cell(0, 8, f"{etu_info['filiere']} - {etu_info['niveau']}", ln=1)
+    
+    pdf.ln(20)
+    
+    # Tableau des notes
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.set_fill_color(233, 69, 96)
+    pdf.set_text_color(255, 255, 255)
+    
+    # Header
+    cols = [("Matière", 65), ("Crédits", 15), ("CC", 15), ("TP", 15), ("EXAM", 15), ("Moy/20", 20), ("Grade", 15), ("Décision", 30)]
+    for txt, width in cols:
+        pdf.cell(width, 10, txt, 1, 0, 'C', 1)
+    pdf.ln()
+    
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('helvetica', '', 9)
+    
+    fill = False
+    for _, row in df_etu_pdf.iterrows():
+        pdf.set_fill_color(250, 250, 250) if fill else pdf.set_fill_color(255, 255, 255)
+        pdf.cell(65, 8, f" {str(row['matiere'])[:35]}", 1, 0, 'L', fill)
+        pdf.cell(15, 8, str(row.get('credits', 6)), 1, 0, 'C', fill)
+        pdf.cell(15, 8, f"{row['note_cc']:.2f}", 1, 0, 'C', fill)
+        pdf.cell(15, 8, f"{row['note_tp']:.2f}", 1, 0, 'C', fill)
+        pdf.cell(15, 8, f"{row['note_examen']:.2f}", 1, 0, 'C', fill)
+        pdf.cell(20, 8, f"{row['note_finale']:.2f}", 1, 0, 'C', fill)
+        pdf.cell(15, 8, str(row['mention']), 1, 0, 'C', fill)
+        _, _, decision = get_lmd_info(row['note_finale'])
+        pdf.cell(30, 8, decision, 1, 1, 'C', fill)
+        fill = not fill
+    
+    # Résumé final
+    pdf.ln(10)
+    total_credits = df_etu_pdf['credits'].sum()
+    moy_gen = np.average(df_etu_pdf['note_finale'], weights=df_etu_pdf['credits']) if total_credits > 0 else df_etu_pdf['note_finale'].mean()
+    
+    pdf.set_font('helvetica', 'B', 11)
+    pdf.set_fill_color(233, 69, 96)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(145, 10, "MOYENNE GÉNÉRALE DU SEMESTRE ", 1, 0, 'R', 1)
+    pdf.cell(45, 10, f"{moy_gen:.2f} / 20", 1, 1, 'C', 1)
+    
+    # Blocs signatures
+    pdf.ln(20)
+    pdf.set_text_color(0, 0, 0)
+    curr_y = pdf.get_y()
+    
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.set_xy(10, curr_y)
+    pdf.cell(90, 8, "L'Étudiant(e)", ln=0, align='C')
+    pdf.cell(90, 8, "Le Chef de Département", ln=1, align='C')
+    
+    pdf.set_font('helvetica', 'I', 8)
+    pdf.cell(90, 5, "(Signature précédée de la mention 'Lu et approuvé')", ln=0, align='C')
+    pdf.cell(90, 5, "(Signature et Cachet)", ln=1, align='C')
+    
+    # Placeholder for Stamp
+    pdf.set_draw_color(233, 69, 96)
+    pdf.set_line_width(0.5)
+    pdf.set_xy(135, curr_y + 15)
+    pdf.cell(40, 20, "CACHET", 1, 0, 'C')
+
+    return pdf.output()
+
+def generate_facture_pdf(df_panier, vente_info):
+    pdf = DataCollectPDF()
+    pdf.alias_nb_pages()
+    pdf.add_page()
+    
+    # Titre Facture
+    pdf.set_font('helvetica', 'B', 20)
+    pdf.set_text_color(0, 208, 132) # Primary comm color
+    pdf.cell(0, 15, "FACTURE COMMERCIALE", ln=True, align='C')
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 5, f"N° FACT : {datetime.now().strftime('%Y%m%d%H%M%S')}", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Cadre Infos Client/Vente
+    pdf.set_fill_color(240, 250, 245)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.rect(10, 65, 190, 30, 'F')
+    
+    pdf.set_xy(15, 68)
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.set_text_color(50, 50, 50)
+    pdf.cell(30, 6, "DATE :", 0)
+    pdf.set_font('helvetica', '', 10)
+    pdf.cell(65, 6, f"{vente_info['date_vente']}", 0)
+    
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.cell(30, 6, "VENDEUR :", 0)
+    pdf.set_font('helvetica', '', 10)
+    pdf.cell(0, 6, f"{vente_info['vendeur'].upper()}", ln=1)
+    
+    pdf.set_x(15)
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.cell(30, 6, "RÉGION :", 0)
+    pdf.set_font('helvetica', '', 10)
+    pdf.cell(65, 6, f"{vente_info['region']}", 0)
+    
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.cell(30, 6, "PAIEMENT :", 0)
+    pdf.set_font('helvetica', '', 10)
+    pdf.cell(0, 6, f"{vente_info['mode_paiement']}", ln=1)
+    
+    pdf.ln(12)
+    
+    # Tableau des articles
+    pdf.set_font('helvetica', 'B', 11)
+    pdf.set_fill_color(0, 208, 132)
+    pdf.set_text_color(255, 255, 255)
+    
+    pdf.cell(90, 10, "   Désignation Produit", 1, 0, 'L', 1)
+    pdf.cell(25, 10, "Qté", 1, 0, 'C', 1)
+    pdf.cell(35, 10, "Prix Unit.", 1, 0, 'C', 1)
+    pdf.cell(40, 10, "Total (FCFA)", 1, 1, 'C', 1)
+    
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('helvetica', '', 10)
+    
+    total_facture = 0
+    fill = False
+    for _, row in df_panier.iterrows():
+        p = row.get("Produit")
+        if pd.isna(p) or str(p).strip() == "": continue
+        
+        q = int(row.get("Quantité", 1))
+        pu = float(row.get("Prix unitaire (FCFA)", 0.0))
+        stotal = q * pu
+        total_facture += stotal
+        
+        pdf.set_fill_color(245, 245, 245) if fill else pdf.set_fill_color(255, 255, 255)
+        pdf.cell(90, 8, f"  {str(p)[:45]}", 1, 0, 'L', fill)
+        pdf.cell(25, 8, str(q), 1, 0, 'C', fill)
+        pdf.cell(35, 8, f"{pu:,.0f}", 1, 0, 'C', fill)
+        pdf.cell(40, 8, f"{stotal:,.0f}", 1, 1, 'C', fill)
+        fill = not fill
+    
+    # Total Final
+    pdf.ln(5)
+    pdf.set_font('helvetica', 'B', 14)
+    pdf.set_fill_color(0, 208, 132)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(115, 12, "MONTANT TOTAL À PAYER (FCFA) ", 1, 0, 'R', 1)
+    pdf.cell(75, 12, f"{total_facture:,.0f} FCFA", 1, 1, 'C', 1)
+    
+    # Mentions légales & Signatures
+    pdf.ln(20)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font('helvetica', 'B', 10)
+    curr_y = pdf.get_y()
+    
+    pdf.set_xy(10, curr_y)
+    pdf.cell(90, 8, "Signature Client", ln=0, align='C')
+    pdf.cell(90, 8, "Cachet de l'Entreprise", ln=1, align='C')
+    
+    pdf.ln(10)
+    pdf.set_font('helvetica', 'I', 8)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 10, "Les marchandises vendues ne sont ni reprises ni échangées après livraison.", ln=True, align='C')
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.set_text_color(0, 208, 132)
+    pdf.cell(0, 10, "MERCI DE VOTRE CONFIANCE !", ln=True, align='C')
+    
+    return pdf.output()
 
 # ─── PAGE CONFIG ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -327,7 +569,7 @@ with st.sidebar:
     elif module == "🛒 Commerce":
         page_com = st.selectbox(
             "Navigation",
-            ["➕ Saisir des données", "📦 Gestion des Stocks", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
+            ["➕ Saisir des données", "📥 Entrées Stock (Achats)", "📤 Importer CSV/Excel", "📊 Analyse descriptive", "🗃️ Voir toutes les données", "🤖 Prédiction (IA)", "⚙️ Administration"]
         )
 
     st.markdown("""
@@ -839,6 +1081,23 @@ elif module == "📚 Éducation":
                 df_show.columns = ['Unité d\'Enseignement', 'Crédits', 'CC/20', 'TP/30', 'EE/50', 'Moy/20', 'Cote', 'Points', 'Décision', 'Semestre']
                 st.dataframe(df_show, use_container_width=True)
                 
+                # PDF Download Button
+                try:
+                    current_etu_info = {
+                        'nom': nom_etu, 'prenom': prenom_etu, 'matricule': matricule_sel,
+                        'filiere': niveau_etu.split(' ')[0], 'niveau': niveau_etu, 'semestre': sem_sel
+                    }
+                    pdf_bulletin = generate_bulletin_pdf(df_etu, current_etu_info)
+                    st.download_button(
+                        label="📄 Télécharger le Bulletin (PDF)",
+                        data=bytes(pdf_bulletin),
+                        file_name=f"Bulletin_{nom_etu}_{sem_sel}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+                except Exception as e:
+                    st.error(f"Erreur PDF : {e}")
+                
                 if sem_sel == "Tous":
                     if credits_valides >= 45:
                         st.markdown(f'<div class="success-msg">🎊 Bilan Annuel : ADMIS EN CLASSE SUPÉRIEURE (Crédits acquis : {credits_valides:.0f}/{total_credits:.0f}) !</div>', unsafe_allow_html=True)
@@ -1044,16 +1303,31 @@ elif module == "🛒 Commerce":
                             💰 TOTAL : <span style="font-size: 1.5rem;">{total_facture:,.0f} FCFA</span>
                         </div>
                         """, unsafe_allow_html=True)
+                        
+                        # Invoice PDF Button
+                        try:
+                            vente_info = {
+                                'vendeur': vendeur, 'region': region, 'date_vente': str(date_vente),
+                                'mode_paiement': mode_paiement
+                            }
+                            pdf_invoice = generate_facture_pdf(edited_sales, vente_info)
+                            st.download_button(
+                                label="🧾 Imprimer la Facture (PDF)",
+                                data=bytes(pdf_invoice),
+                                file_name=f"Facture_{datetime.now().strftime('%d%m%Y_%H%M%S')}.pdf",
+                                mime="application/pdf",
+                                use_container_width=True
+                            )
+                        except Exception as e:
+                            st.error(f"Erreur Facture PDF : {e}")
                     else:
-                        st.warning("⚠️ Aucun article valide n'a été trouvé dans le panier.")
-                else:
-                    st.error("⚠️ Veuillez entrer le nom du vendeur pour valider la transaction.")
+                        st.error("⚠️ Veuillez entrer le nom du vendeur pour valider la transaction.")
 
-    # ── GESTION DES STOCKS ────────────────────────────────────────────────────
-    elif page_com == "📦 Gestion des Stocks":
+    # ── GESTION DES STOCKS (ACHATS) ───────────────────────────────────────────
+    elif page_com == "📥 Entrées Stock (Achats)":
         st.markdown("### 📦 Gestion des Stocks & Approvisionnements")
         
-        tab1, tab2 = st.tabs(["🛒 Nouvel Achat (Stock +)", "📊 État des Stocks"])
+        tab1, tab2, tab3 = st.tabs(["🛒 Nouvel Achat (Stock +)", "📊 État des Stocks", "📜 Historique des Achats"])
         
         with tab1:
             with st.container(border=True):
@@ -1144,6 +1418,36 @@ elif module == "🛒 Commerce":
                 stock_bas = inventory[inventory['Stock Actuel'] <= 5]['produit'].tolist()
                 if stock_bas:
                     st.error(f"🚨 **ALERTE STOCK BAS :** {', '.join(stock_bas)} (Moins de 5 unités restantes !)")
+
+        with tab3:
+            st.markdown("#### 📜 Historique chronologique des approvisionnements")
+            df_ach = get_achats()
+            if df_ach.empty:
+                st.info("Aucun achat enregistré pour le moment.")
+            else:
+                # Colonnes de recherche
+                c1, c2 = st.columns(2)
+                with c1:
+                    search_p = st.text_input("Filtrer par produit (achat)", placeholder="Rechercher...")
+                with c2:
+                    search_f = st.text_input("Filtrer par fournisseur", placeholder="Rechercher...")
+                
+                df_f = df_ach.copy()
+                if search_p:
+                    df_f = df_f[df_f['produit'].str.contains(search_p, case=False, na=False)]
+                if search_f:
+                    df_f = df_f[df_f['fournisseur'].str.contains(search_f, case=False, na=False)]
+                
+                # Ajout d'une colonne montant total pour l'affichage
+                df_f['Montant Total'] = df_f['quantite'] * df_f['prix_achat']
+                
+                st.dataframe(
+                    df_f[['date_achat', 'produit', 'categorie', 'quantite', 'prix_achat', 'Montant Total', 'fournisseur']],
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                st.metric("Total investi en stock sur la sélection", f"{df_f['Montant Total'].sum():,.0f} FCFA")
 
     # ── IMPORTER ──────────────────────────────────────────────────────────────
     elif page_com == "📤 Importer CSV/Excel":
@@ -1451,3 +1755,21 @@ elif module == "🛒 Commerce":
                 conn.close()
                 st.success("La base de données Commerce a été entièrement vidée.")
                 st.rerun()
+                    
+        st.markdown("---")
+        col3, col4 = st.columns(2)
+        with col3:
+            st.markdown("#### Supprimer une entrée de stock (Achat)")
+            df_a = get_achats()
+            if df_a.empty:
+                st.info("Aucun achat en base.")
+            else:
+                ach_list = df_a['id'].astype(str) + " - " + df_a['produit'] + " (" + df_a['quantite'].astype(str) + " unités)"
+                to_del_ach = st.selectbox("Sélectionnez l'achat à supprimer", df_a['id'].tolist(), format_func=lambda x: ach_list[df_a['id'] == x].values[0])
+                if st.button("🗑️ Supprimer cet achat", key="btn_del_ach"):
+                    conn = get_conn()
+                    conn.execute("DELETE FROM achats WHERE id=?", (to_del_ach,))
+                    conn.commit()
+                    conn.close()
+                    st.success("Entrée de stock supprimée !")
+                    st.rerun()
