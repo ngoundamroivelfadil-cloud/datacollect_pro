@@ -255,7 +255,7 @@ def get_conn(): return sqlite3.connect(DB_PATH)
 
 def get_etudiants():
     conn = get_conn()
-    df = pd.read_sql("SELECT * FROM etudiants ORDER BY date_saisie DESC", conn)
+    df = pd.read_sql("SELECT * FROM etudiants ORDER BY date_e DESC", conn)
     conn.close()
     return df
 
@@ -427,7 +427,7 @@ if module == "🏠 Accueil":
             recent_v = df_com.groupby('date_saisie').agg({
                 'vendeur': 'first',
                 'montant_total': 'sum'
-            }).reset_index().sort_values('date_saisie', ascending=False).head(5)
+            }).reset_index().sort_values('date_e', ascending=False).head(5)
             
             recent_v.columns = ['Date/Heure Saisie', 'Agent Vendeur', 'Montant Total (FCFA)']
             st.dataframe(recent_v, use_container_width=True, hide_index=True)
@@ -678,7 +678,7 @@ elif module == "📚 Éducation":
                                        color_discrete_sequence=['#e94560'],
                                        template='plotly_dark')
                     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                                      font_color='#c8c8d8')
+                                      font_color="#1f1fdd")
                     fig.add_vline(x=10, line_dash="dash", line_color="#00d084", annotation_text="Seuil 10/20")
                     st.plotly_chart(fig, use_container_width=True)
 
@@ -1193,7 +1193,7 @@ elif module == "🛒 Commerce":
                             mt = round(qt * pu, 2)
                             conn.execute("""
                                 INSERT INTO ventes (produit, categorie, quantite, prix_unitaire,
-                                montant_total, region, vendeur, date_vente, mode_paiement, date_saisie)
+                                montant_total, region, vendeur, date_vente, mode_paiement, date_e)
                                 VALUES (?,?,?,?,?,?,?,?,?,?)
                             """, (row.get('produit',''), row.get('categorie',''), qt, pu, mt,
                                   row.get('region',''), row.get('vendeur',''),
