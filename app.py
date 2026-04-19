@@ -490,6 +490,13 @@ def init_db():
             date_saisie TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS ajustements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            produit TEXT, quantite_ajustee INTEGER,
+            motif TEXT, date_ajustement TEXT, date_saisie TEXT
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -510,6 +517,12 @@ def get_ventes():
 def get_achats():
     conn = get_conn()
     df = pd.read_sql("SELECT * FROM achats ORDER BY date_saisie DESC", conn)
+    conn.close()
+    return df
+
+def get_ajustements():
+    conn = get_conn()
+    df = pd.read_sql("SELECT * FROM ajustements ORDER BY date_saisie DESC", conn)
     conn.close()
     return df
 
@@ -1400,9 +1413,18 @@ elif module == "🛒 Commerce":
                 stock_in = df_achats.groupby('produit')['quantite'].sum().reset_index().rename(columns={'quantite': 'Entrées'})
                 stock_out = df_ventes.groupby('produit')['quantite'].sum().reset_index().rename(columns={'quantite': 'Sorties'})
                 
+                # Récupérer et calculer les ajustements
+                df_ajust = get_ajustements()
+                if not df_ajust.empty:
+                    stock_adj = df_ajust.groupby('produit')['quantite_ajustee'].sum().reset_index().rename(columns={'quantite_ajustee': 'Ajustements'})
+                else:
+                    stock_adj = pd.DataFrame(columns=['produit', 'Ajustements'])
+                
                 # Fusionner pour avoir l'état global
                 inventory = pd.merge(stock_in, stock_out, on='produit', how='outer').fillna(0)
-                inventory['Stock Actuel'] = inventory['Entrées'] - inventory['Sorties']
+                inventory = pd.merge(inventory, stock_adj, on='produit', how='outer').fillna(0)
+                
+                inventory['Stock Actuel'] = inventory['Entrées'] - inventory['Sorties'] + inventory['Ajustements']
                 
                 # Styling
                 def color_stock(val):
@@ -1773,3 +1795,76 @@ elif module == "🛒 Commerce":
                     conn.close()
                     st.success("Entrée de stock supprimée !")
                     st.rerun()
+        
+        st.markdown("### 🛠️ Correction & Ajustement Approfondis")
+        col_mod, col_reg = st.columns(2)
+        
+        with col_mod:
+            st.markdown("#### ✏️ Modifier une erreur sur un Achat")
+            df_a = get_achats()
+            if not df_a.empty:
+                ach_list_full = df_a['id'].astype(str) + " - " + df_a['produit'] + " (" + df_a['fournisseur'] + ")"
+                ach_to_edit = st.selectbox("Sélectionner l'achat à corriger", df_a['id'].tolist(), format_func=lambda x: ach_list_full[df_a['id'] == x].values[0], key="sel_edit_ach")
+                
+                # Formulaire de modification
+                row = df_a[df_a['id'] == ach_to_edit].iloc[0]
+                with st.form("form_edit_achat"):
+                    new_prod = st.text_input("Désignation Produit", value=row['produit'])
+                    col_q, col_p = st.columns(2)
+                    new_qty = col_q.number_input("Quantité", value=int(row['quantite']), min_value=1)
+                    new_pu = col_p.number_input("Prix Achat Unitaire", value=float(row['prix_achat']), min_value=0.0)
+                    new_fourn = st.text_input("Fournisseur", value=row['fournisseur'])
+                    
+                    if st.form_submit_button("✅ Enregistrer les modifications"):
+                        conn = get_conn()
+                        conn.execute("""
+                            UPDATE achats SET produit=?, quantite=?, prix_achat=?, fournisseur=?
+                            WHERE id=?
+                        """, (new_prod, new_qty, new_pu, new_fourn, ach_to_edit))
+                        conn.commit()
+                        conn.close()
+                        st.success("Achat mis à jour avec succès !")
+                        st.rerun()
+            else:
+                st.info("Aucun achat à modifier.")
+
+        with col_reg:
+            st.markdown("#### ⚖️ Régularisation Manuelle (Inventaire)")
+            st.info("Utilisez ceci pour corriger le stock sans modifier les factures d'achat (ex: casse, vol, don, erreur inventaire brute).")
+            
+            with st.form("form_regu_stock", clear_on_submit=True):
+                # Liste des produits existants pour suggérer
+                all_prods = sorted(list(set(df_ventes['produit'].unique().tolist() + df_achats['produit'].unique().tolist())))
+                prod_reg = st.selectbox("Produit à régulariser", all_prods if all_prods else ["Aucun produit"])
+                qty_reg = st.number_input("Quantité à ajouter/retirer", value=0, help="Positif pour ajouter (ex: stock retrouvé), Négatif pour retirer (ex: casse).")
+                motif_reg = st.selectbox("Motif de l'ajustement", ["Erreur de saisie", "Casse / Avarie", "Vol / Perte", "Don / Échantillon", "Inventaire physique", "Autre"])
+                date_reg = st.date_input("Date du constat", value=date.today())
+                
+                if st.form_submit_button("💾 Valider la régularisation"):
+                    if prod_reg and prod_reg != "Aucun produit" and qty_reg != 0:
+                        conn = get_conn()
+                        conn.execute("""
+                            INSERT INTO ajustements (produit, quantite_ajustee, motif, date_ajustement, date_saisie)
+                            VALUES (?,?,?,?,?)
+                        """, (prod_reg, qty_reg, motif_reg, str(date_reg), datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                        conn.commit()
+                        conn.close()
+                        st.success(f"Stock ajusté de {qty_reg} pour '{prod_reg}' !")
+                        st.rerun()
+                    else:
+                        st.error("Veuillez remplir correctement les champs.")
+
+        # Historique des régularisations
+        st.markdown("---")
+        st.markdown("#### 📜 Historique des Ajustements Manuels")
+        df_aj = get_ajustements()
+        if not df_aj.empty:
+            st.dataframe(df_aj[['date_ajustement', 'produit', 'quantite_ajustee', 'motif']], use_container_width=True, hide_index=True)
+            if st.button("🗑️ Effacer tout l'historique des ajustements"):
+                 conn = get_conn()
+                 conn.execute("DELETE FROM ajustements")
+                 conn.commit()
+                 conn.close()
+                 st.rerun()
+        else:
+            st.info("Aucun ajustement manuel enregistré.")
